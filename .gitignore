@@ -131,3 +131,4 @@ dmypy.json
 # Extra files
 reference/detectron2/datasets
 reference/detectron2/output
+wandb
