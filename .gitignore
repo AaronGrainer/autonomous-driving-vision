@@ -129,4 +129,5 @@ dmypy.json
 .pyre/
 
 # Extra files
-reference/implementation
+reference/detectron2/datasets
+reference/detectron2/output
