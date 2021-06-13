@@ -132,3 +132,4 @@ dmypy.json
 reference/detectron2/datasets
 reference/detectron2/output
 wandb
+object-detection/datasets
