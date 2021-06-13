@@ -49,7 +49,7 @@ def get_object_dicts():
         for bbox in bboxes:
             annotations.append({
                 'bbox': [float(b) for b in bbox],
-                'bbox_mode': BoxMode.XYWH_ABS,
+                'bbox_mode': BoxMode.XYXY_ABS,
                 'category_id': 0
             })
         record['annotations'] = annotations
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     car_metadata = MetadataCatalog.get("car_train")
 
     # dataset_dicts = get_object_dicts()
-    # for d in random.sample(dataset_dicts, 3):
+    # for d in random.sample(dataset_dicts, 10):
     #     print('d: ', d)
     #     img = cv2.imread(d["file_name"])
     #     visualizer = Visualizer(img[:, :, ::-1], metadata=car_metadata, scale=0.5)
