@@ -134,3 +134,5 @@ reference/detectron2/output
 wandb
 object-detection/datasets
 object-detection/output
+
+semantic-segmentation/datasets
