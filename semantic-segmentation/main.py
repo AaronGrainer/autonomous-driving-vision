@@ -68,8 +68,30 @@ class SegmentationTrainer(DefaultTrainer):
     """
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
-        pass
+        """Create an evaluator for cityscapes_instance evaluation
+        """
+        if output_folder is None:
+            output_folder = os.path.join(cfg.OUTPUT_DIR, 'validation')
+        evaluator_type = MetadataCatalog.get(dataset_name).evaluator_type
 
+        assert evaluator_type == 'cityscapes_instance'
+        assert(torch.cuda.device_count() >= comm.get_rank()), \
+            'CityscapesEvaluator currently does not work with multiple machines.'
+
+        return MyCityscapesInstanceEvaluator(dataset_name)
+
+
+class MyCityscapesInstanceEvaluator(CityscapesInstanceEvaluator):
+    def evaluate(self):
+        """Overwrite the evaluate method in CityscapesInstanceEvaluator.
+           Add lines to write AP scores to be visualized in Tensorboard.
+        """
+        comm.synchronize()
+        if comm.get_rank() > 0:
+            return
+        import cityscapesscripts.evaluation.evalInstanceLevelSemanticLabeling as cityscapes_eval
+
+        self._logger.info(f'Evaluating results under {self._temp_dir} ...')
 
 
 def main(do_eval=False, output_dir='/mark_rcnn_output'):
