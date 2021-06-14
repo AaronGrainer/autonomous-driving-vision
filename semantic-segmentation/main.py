@@ -40,8 +40,39 @@ def register_dataset_instance(image_dir, gt_dir, splits=['train', 'val'], datase
         print(f'Registered {dataset_instance_name} to DatasetCatalog.')
 
 
+def setup(do_eval, output_dir, dataset_train, dataset_val):
+    cfg = get_cfg()
 
-def main(do_eval=False):
+    cfg.merge_from_file(model_zoo.get_config_file("Cityscapes/mask_rcnn_R_50_FPN.yaml"))
+    cfg.OUTPUT_DIR = f'{output_dir}/output_resnet-50'
+    cfg.DATASETS.TRAIN = (dataset_train,)
+    cfg.DATASETS.TEST = (dataset_val,) if do_eval else ()
+
+    cfg.DATALOADER.NUM_WORKERS = 4
+    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("Cityscapes/mask_rcnn_R_50_FPN.yaml")
+    cfg.TEST.EVAL_PERIOD = 600
+
+    cfg.SOLVER.IMS_PER_BATCH = 16
+    cfg.SOLVER.BASE_LR = 0.01
+    cfg.SOLVER.GAMMA = 0.1
+    cfg.SOLVER.STEPS = (10000, 20000)  # iteration numbers to decrease learning rate by SOLVER.GAMMA
+    cfg.SOLVER.MAX_ITER = 30000
+
+    os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
+    
+    return cfg
+
+
+class SegmentationTrainer(DefaultTrainer):
+    """Create a subclass inheriting from DefaultTrainer.
+    """
+    @classmethod
+    def build_evaluator(cls, cfg, dataset_name, output_folder=None):
+        pass
+
+
+
+def main(do_eval=False, output_dir='/mark_rcnn_output'):
     dataset_root_dir = 'datasets/kitti_semantics_cs'
     dataset_name = dataset_root_dir.split('/')[-1]
     image_dir = os.path.join(dataset_root_dir, "data_semantics/")
@@ -52,6 +83,12 @@ def main(do_eval=False):
     register_dataset_instance(image_dir, gt_dir, splits=splits, dataset_name=dataset_name, from_json=False)
     dataset_train = f'{dataset_name}_instance_train'
     dataset_val = f'{dataset_name}_instance_val'
+    
+    cfg = setup(do_eval, output_dir, dataset_train, dataset_val)
+
+    trainer = SegmentationTrainer(cfg)
+    trainer.resume_or_load(resume=False)
+    return trainer.train()
 
 
 
