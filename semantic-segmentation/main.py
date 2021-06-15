@@ -93,6 +93,38 @@ class MyCityscapesInstanceEvaluator(CityscapesInstanceEvaluator):
 
         self._logger.info(f'Evaluating results under {self._temp_dir} ...')
 
+        cityscapes_eval.args.predictionPath = os.path.abspath(self._temp_dir)
+        cityscapes_eval.args.predictionWalk = None
+        cityscapes_eval.args.JSONOutput = False
+        cityscapes_eval.args.colorized = False
+        cityscapes_eval.args.gtInstancesFile = os.path.join(self._temp_dir, 'gtInstances.json')
+
+        gt_dir = PathManager.get_local_path(self._metadata.gt_dir)
+        groundTruthImgList = glob.glob(os.path.join(gt_dir, '*', '*_gtFine_instanceIds.png'))
+        assert len(groundTruthImgList), \
+            f'Cannot find any ground truth images to use for evaluation. Searched for: {cityscapes_eval.args.groundTruthSearch}'
+
+        predictionImgList = []
+        for gt in groundTruthImgList:
+            predictionImgList.append(cityscapes_eval.getPrediction(gt, cityscapes_eval.args))
+        results = cityscapes_eval.evaluateImgLists(predictionImgList,
+                                                   groundTruthImgList,
+                                                   cityscapes_eval.args)['averages']
+        
+        res = OrderedDict()
+        res['segm'] = {
+            'AP': results['allAp']*100,
+            'AP50': results['allAp50%']*100
+        }
+
+        # Writing to tensorboard
+        storage = get_event_storage()
+        storage.put_scalar('eval/AP', res['segm']['AP'])
+        storage.put_scalar('eval/AP50', res['segm']['AP50'])
+
+        self._working_dir.cleanup()
+        return res
+
 
 def main(do_eval=False, output_dir='/mark_rcnn_output'):
     dataset_root_dir = 'datasets/kitti_semantics_cs'
@@ -111,7 +143,6 @@ def main(do_eval=False, output_dir='/mark_rcnn_output'):
     trainer = SegmentationTrainer(cfg)
     trainer.resume_or_load(resume=False)
     return trainer.train()
-
 
 
 if __name__ == '__main__':
