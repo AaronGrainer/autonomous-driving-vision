@@ -10,12 +10,14 @@ from detectron2.data.datasets import load_cityscapes_instances, builtin_meta
 from detectron2.engine import DefaultPredictor, DefaultTrainer, default_argument_parser, default_setup, hooks, launch
 from detectron2.evaluation import CityscapesInstanceEvaluator
 from detectron2.utils.events import get_event_storage
-from detectron2.utils.visualizer import Visualizer
+from detectron2.utils.visualizer import Visualizer, ColorMode
 
 import glob
 import os
 import sys
 import numpy as np
+import random
+import cv2
 from fvcore.common.file_io import PathManager
 from collections import OrderedDict
 import fire
@@ -39,24 +41,28 @@ def register_dataset_instance(image_dir, gt_dir, splits=['train', 'val'], datase
                                                        **meta)
         print(f'Registered {dataset_instance_name} to DatasetCatalog.')
 
+    cityscapes_metadata = MetadataCatalog.get(f'{str(dataset_name)}_instance_train')
+
+    return cityscapes_metadata
+
 
 def setup(do_eval, output_dir, dataset_train, dataset_val):
     cfg = get_cfg()
 
     cfg.merge_from_file(model_zoo.get_config_file("Cityscapes/mask_rcnn_R_50_FPN.yaml"))
-    cfg.OUTPUT_DIR = f'{output_dir}/output_resnet-50'
+    # cfg.OUTPUT_DIR = f'{output_dir}/output_resnet-50'
     cfg.DATASETS.TRAIN = (dataset_train,)
     cfg.DATASETS.TEST = (dataset_val,) if do_eval else ()
 
-    cfg.DATALOADER.NUM_WORKERS = 4
+    cfg.DATALOADER.NUM_WORKERS = 2
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("Cityscapes/mask_rcnn_R_50_FPN.yaml")
     cfg.TEST.EVAL_PERIOD = 600
 
-    cfg.SOLVER.IMS_PER_BATCH = 16
+    cfg.SOLVER.IMS_PER_BATCH = 2
     cfg.SOLVER.BASE_LR = 0.01
     cfg.SOLVER.GAMMA = 0.1
     cfg.SOLVER.STEPS = (10000, 20000)  # iteration numbers to decrease learning rate by SOLVER.GAMMA
-    cfg.SOLVER.MAX_ITER = 30000
+    cfg.SOLVER.MAX_ITER = 300
 
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
     
@@ -134,15 +140,41 @@ def main(do_eval=False, output_dir='/mark_rcnn_output'):
 
     # Register Dataset
     splits = ['train', 'val'] if do_eval else ['train']
-    register_dataset_instance(image_dir, gt_dir, splits=splits, dataset_name=dataset_name, from_json=False)
+    cityscapes_metadata = register_dataset_instance(image_dir, gt_dir, splits=splits, dataset_name=dataset_name, from_json=False)
     dataset_train = f'{dataset_name}_instance_train'
     dataset_val = f'{dataset_name}_instance_val'
     
     cfg = setup(do_eval, output_dir, dataset_train, dataset_val)
 
     trainer = SegmentationTrainer(cfg)
+    # trainer = DefaultTrainer(cfg)
     trainer.resume_or_load(resume=False)
-    return trainer.train()
+    trainer.train()
+
+
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")  # path to the model we just trained
+    # cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7   # set a custom testing threshold
+    predictor = DefaultPredictor(cfg)
+
+    test_images = [
+        'datasets/kitti_semantics_cs/data_semantics/train/kitti/kitti_000000_10_leftimg8bit.png',
+        'datasets/kitti_semantics_cs/data_semantics/train/kitti/kitti_000001_10_leftimg8bit.png',
+        'datasets/kitti_semantics_cs/data_semantics/train/kitti/kitti_000002_10_leftimg8bit.png',
+        'datasets/kitti_semantics_cs/data_semantics/train/kitti/kitti_000003_10_leftimg8bit.png',
+        'datasets/kitti_semantics_cs/data_semantics/train/kitti/kitti_000004_10_leftimg8bit.png'
+    ]
+
+    for filename in test_images:
+        im = cv2.imread(filename)
+        outputs = predictor(im)  # format is documented at https://detectron2.readthedocs.io/tutorials/models.html#model-output-format
+        v = Visualizer(im[:, :, ::-1],
+                    metadata=cityscapes_metadata, 
+                    scale=0.5, 
+                    instance_mode=ColorMode.IMAGE   # remove the colors of unsegmented pixels. This option is only available for segmentation models
+        )
+        out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+        cv2.imshow('Prediction', out.get_image()[:, :, ::-1])
+        cv2.waitKey()
 
 
 if __name__ == '__main__':

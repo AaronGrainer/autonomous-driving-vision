@@ -136,3 +136,4 @@ object-detection/datasets
 object-detection/output
 
 semantic-segmentation/datasets
+semantic-segmentation/output

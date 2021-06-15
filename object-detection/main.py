@@ -99,12 +99,12 @@ if __name__ == '__main__':
     predictor = DefaultPredictor(cfg)
 
     dataset_dicts = get_object_dicts()
-    for d in random.sample(dataset_dicts, 3):    
+    for d in random.sample(dataset_dicts, 3):
         im = cv2.imread(d["file_name"])
         outputs = predictor(im)  # format is documented at https://detectron2.readthedocs.io/tutorials/models.html#model-output-format
         v = Visualizer(im[:, :, ::-1],
-                    metadata=car_metadata, 
-                    scale=0.5, 
+                    metadata=car_metadata,
+                    scale=0.5,
                     instance_mode=ColorMode.IMAGE   # remove the colors of unsegmented pixels. This option is only available for segmentation models
         )
         out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
