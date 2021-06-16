@@ -62,7 +62,7 @@ def setup(do_eval, output_dir, dataset_train, dataset_val):
     cfg.SOLVER.BASE_LR = 0.01
     cfg.SOLVER.GAMMA = 0.1
     cfg.SOLVER.STEPS = (10000, 20000)  # iteration numbers to decrease learning rate by SOLVER.GAMMA
-    cfg.SOLVER.MAX_ITER = 300
+    cfg.SOLVER.MAX_ITER = 1000
 
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
     
@@ -167,10 +167,11 @@ def main(do_eval=False, output_dir='/mark_rcnn_output'):
     for filename in test_images:
         im = cv2.imread(filename)
         outputs = predictor(im)  # format is documented at https://detectron2.readthedocs.io/tutorials/models.html#model-output-format
-        v = Visualizer(im[:, :, ::-1],
-                    metadata=cityscapes_metadata, 
-                    scale=0.5, 
-                    instance_mode=ColorMode.IMAGE   # remove the colors of unsegmented pixels. This option is only available for segmentation models
+        v = Visualizer(
+            im[:, :, ::-1],
+            metadata=cityscapes_metadata, 
+            scale=0.5, 
+            instance_mode=ColorMode.IMAGE   # remove the colors of unsegmented pixels. This option is only available for segmentation models
         )
         out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
         cv2.imshow('Prediction', out.get_image()[:, :, ::-1])
