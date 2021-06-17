@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 from model.backbone import Resnet
 import numpy as np
@@ -65,7 +66,42 @@ class ParsingNet(nn.Module):
             )
             initialize_weights(self.aux_header2, self.aux_header3, self.aux_header4, self.aux_combine)
 
+        self.cls = nn.Sequential(
+            nn.Linear(1800, 2048),
+            nn.ReLU(),
+            nn.Linear(2048, self.total_dim)
+        )
 
+        self.pool = nn.Conv2d(512, 8, 1) if backbone in ['34', '18'] else nn.Conv2d(2048, 8, 1)
+        # 1/32,2048 channel
+        # 288,800 -> 9,40,2048
+        # (w+1) * sample_rows * 4
+        # 37 * 10 * 4
+        initialize_weights(self.cls)
+
+    def forward(self, x):
+        # n c h w - > n 2048 sh sw -> n 2048
+        x2, x3, fea = self.model(x)
+        if self.use_aux:
+            x2 = self.aux_header2(x2)
+            x3 = self.aux_header3(x3)
+            x3 = nn.functional.interpolate(x3, scale_factor=2, model='bilinear')
+            x4 = self.aux_header4(fea)
+            x4 = nn.functional.interpolate(x4, scale_factor=4, model='bilinear')
+            aux_seg = torch.cat([x2, x3, x4], dim=1)
+            aux_seg = self.aux_combine(aux_seg)
+        else:
+            aux_seg = None
+
+        fea = self.pool(fea).view(-1, 1800)
+
+        group_cls = self.cls(fea).view(-1, *self.cls_dim)
+
+        if self.use_aux:
+            return group_cls, aux_seg
+
+        return group_cls
+        
 
 def initialize_weights(*models):
     for model in models:
