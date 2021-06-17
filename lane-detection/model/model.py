@@ -63,6 +63,33 @@ class ParsingNet(nn.Module):
                 nn.Conv2d(128, cls_dim[-1] + 1, 1)
                 # Output : n, num_of_lanes+1, h, w
             )
+            initialize_weights(self.aux_header2, self.aux_header3, self.aux_header4, self.aux_combine)
 
+
+
+def initialize_weights(*models):
+    for model in models:
+        real_init_weights(model)
+
+
+def real_init_weights(m):
+    if isinstance(m, list):
+        for mini_m in m:
+            real_init_weights(mini_m)
+    else:
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.Linear):
+            m.weight.data.normal_(0.0, std=0.01)
+        elif isinstance(m, nn.BatchNorm2d):
+            nn.init.constant_(m.weight, 1)
+            nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.Module):
+            for mini_m in m.children():
+                real_init_weights(mini_m)
+        else:
+            print('Unknown module', m)
 
 
