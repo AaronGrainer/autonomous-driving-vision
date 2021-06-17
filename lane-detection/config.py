@@ -16,5 +16,7 @@ global_config = Namespace(**dict(
     test_model=os.path.join(os.getcwd(), 'checkpoint/culane_18.pth'),
     test_work_dir=os.path.join(os.getcwd(), 'test_output'),
 
+    test_img=os.path.join(os.getcwd(), 'dataset/00810.jpg'),
+
     num_lanes=4
 ))

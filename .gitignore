@@ -138,4 +138,5 @@ object-detection/output
 semantic-segmentation/datasets
 semantic-segmentation/output
 
+lane-detection/datasets
 lane-detection/checkpoint

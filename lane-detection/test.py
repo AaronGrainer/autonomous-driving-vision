@@ -1,5 +1,9 @@
 import torch
+from torchvision import transforms
 import os
+import cv2
+from PIL import Image
+
 from model.model import ParsingNet
 from config import global_config as gc
 
@@ -31,5 +35,27 @@ if __name__ == '__main__':
         os.mkdir(gc.test_work_dir)
 
     # eval_lane(net, gc.dataset, gc.data_root, gc.test_work_dir, gc.griding_num, False)
+
+    net.eval()
+
+    output_path = os.path.join(gc.test_work_dir, 'culane_eval_tmp')
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+    
+    img_transforms = transforms.Compose([
+        transforms.Resize((288, 800)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+    ])
+
+    img = cv2.imread(gc.test_img)
+    img = Image.fromarray(img)
+    img = img_transforms(img)
+
+    imgs = img.unsqueeze(0).cuda()
+    print('imgs: ', imgs.size())
+    with torch.no_grad():
+        out = net(imgs)
+    print('out: ', out)
 
 
