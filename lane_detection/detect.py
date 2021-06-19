@@ -6,10 +6,10 @@ from PIL import Image
 import numpy as np
 import scipy.special
 
-from model.model import ParsingNet
-from data.dataset import LaneTestDataset
-from data.constant import culane_row_anchor
-from config import global_config as gc
+from lane_detection.model.model import ParsingNet
+from lane_detection.data.dataset import LaneTestDataset
+from lane_detection.data.constant import culane_row_anchor
+from lane_detection.config import global_config as gc
 
 
 class LaneDetection:
@@ -79,15 +79,20 @@ class LaneDetection:
                                 int(self.img_h * (culane_row_anchor[self.cls_num_per_lane - 1 - k] / 288)) - 1)
                         cv2.circle(vis, ppp, 5, (0, 255, 0), -1)
 
-    def detect(self):
-        pass
+    def detect(self, img):
+        img = img.cuda()
+        with torch.no_grad():
+            out = self.net(img)
+
+        out_j = self._format_pred_output(out)
+        self._draw_lane_prediction(img, out_j)
 
     def detect_video(self):
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
         video_name = os.path.join(gc.output_dir, 'test0_normal.avi')
         vout = cv2.VideoWriter(video_name, fourcc, 30.0, (self.img_w, self.img_h))
 
-        for i, data in enumerate(self.loader):
+        for data in self.loader:
             imgs, names = data
             imgs = imgs.cuda()
             with torch.no_grad():

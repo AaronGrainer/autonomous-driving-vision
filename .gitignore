@@ -131,13 +131,15 @@ dmypy.json
 # Extra files
 reference/detectron2/datasets
 reference/detectron2/output
+
 wandb
-object-detection/datasets
-object-detection/output
+
+object_detection/datasets
+object_detection/output
 
 semantic-segmentation/datasets
 semantic-segmentation/output
 
-lane-detection/datasets
-lane-detection/checkpoint
-lane-detection/output
+lane_detection/datasets
+lane_detection/checkpoint
+lane_detection/output
