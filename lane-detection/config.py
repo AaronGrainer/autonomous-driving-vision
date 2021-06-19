@@ -4,8 +4,9 @@ import os
 
 global_config = Namespace(**dict(
     # Data
-    dataset='CULane',
-    data_root=os.path.join(os.getcwd(), 'dataset/culane/'),
+    data_root=os.path.join(os.getcwd(), 'datasets/'),
+    list_path=os.path.join(os.getcwd(), 'datasets/list/test_split/test0_normal.txt'),
+    output_dir=os.path.join(os.getcwd(), 'output'),
 
     # Network
     use_aux=True,
@@ -16,7 +17,7 @@ global_config = Namespace(**dict(
     test_model=os.path.join(os.getcwd(), 'checkpoint/culane_18.pth'),
     test_work_dir=os.path.join(os.getcwd(), 'test_output'),
 
-    test_img=os.path.join(os.getcwd(), 'dataset/00810.jpg'),
+    test_img=os.path.join(os.getcwd(), 'datasets/00810.jpg'),
 
     num_lanes=4
 ))

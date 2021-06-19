@@ -140,3 +140,4 @@ semantic-segmentation/output
 
 lane-detection/datasets
 lane-detection/checkpoint
+lane-detection/output
