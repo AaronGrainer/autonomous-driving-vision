@@ -13,7 +13,7 @@ from lane_detection.config import global_config as gc
 
 
 class LaneDetection:
-    def __init__(self):
+    def __init__(self, load_dataloader=True):
         torch.backends.cudnn.benchmark = True
 
         self.cls_num_per_lane = 18
@@ -27,7 +27,8 @@ class LaneDetection:
         self.img_w, self.img_h = 1640, 590
 
         self._initialize()
-        self._initialize_dataloader()
+        if load_dataloader:
+            self._initialize_dataloader()
         self._initialize_model()
 
         col_sample = np.linspace(0, 800 - 1, gc.griding_num)
@@ -79,13 +80,16 @@ class LaneDetection:
                                 int(self.img_h * (culane_row_anchor[self.cls_num_per_lane - 1 - k] / 288)) - 1)
                         cv2.circle(vis, ppp, 5, (0, 255, 0), -1)
 
-    def detect(self, img):
-        img = img.cuda()
+    def detect(self, ori_img):
+        img = Image.fromarray(ori_img)
+        img = self.img_transform(img)
+        img = img.unsqueeze(0).cuda()
+
         with torch.no_grad():
             out = self.net(img)
 
         out_j = self._format_pred_output(out)
-        self._draw_lane_prediction(img, out_j)
+        self._draw_lane_prediction(ori_img, out_j)
 
     def detect_video(self):
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
@@ -109,7 +113,22 @@ class LaneDetection:
 
 
 if __name__ == '__main__':
-    lane_detection = LaneDetection()
-    lane_detection.detect_video()
+    # lane_detection = LaneDetection()
+    # lane_detection.detect_video()
+
+    lane_detection = LaneDetection(load_dataloader=False)
+
+    cap = cv2.VideoCapture(os.path.join(os.getcwd(), 'video.mp4'))
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret is True:
+            lane_detection.detect(frame)
+            cv2.imshow('Frame', frame)
+            cv2.waitKey(0)
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                break
+        else:
+            break
+    cap.release()
         
 
