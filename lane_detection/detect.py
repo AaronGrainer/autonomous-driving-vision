@@ -5,6 +5,10 @@ import cv2
 from PIL import Image
 import numpy as np
 import scipy.special
+import matplotlib.pyplot as plt
+import math
+from sklearn.linear_model import HuberRegressor, Ridge
+import fire
 
 from lane_detection.model.model import ParsingNet
 from lane_detection.data.dataset import LaneTestDataset
@@ -112,23 +116,144 @@ class LaneDetection:
         vout.release()
 
 
-if __name__ == '__main__':
-    # lane_detection = LaneDetection()
-    # lane_detection.detect_video()
+class LaneDetectionCV:
+    def __init__(self):
+        self.gaussian_kernel = 5
+        self.low_threshold, self.high_threshold = [200, 300]
+        self.hough_settings = {
+            'rho': 1,
+            'theta': math.pi/180,
+            'threshold': 15,
+            'min_line_len': 30,
+            'max_line_gap': 40
+        }
+        self.line_threshold = 330
+        self.line_thickness = 6
 
-    lane_detection = LaneDetection(load_dataloader=False)
+    def _grayscale(self, img):
+        return cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-    cap = cv2.VideoCapture(os.path.join(os.getcwd(), 'video.mp4'))
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if ret is True:
-            lane_detection.detect(frame)
-            cv2.imshow('Frame', frame)
-            cv2.waitKey(0)
-            if cv2.waitKey(25) & 0xFF == ord('q'):
-                break
+    def _gaussian_blur(self, img):
+        return cv2.GaussianBlur(img, (self.gaussian_kernel, self.gaussian_kernel), 0)
+
+    def _canny(self, img):
+        return cv2.Canny(img, self.low_threshold, self.high_threshold)
+
+    def _region_of_interest(self, img, vertices):
+        mask = np.zeros_like(img)
+        if len(img.shape) > 2:
+            channel_count = img.shape[2]
+            ignore_mask_color = (255,) * channel_count
         else:
-            break
-    cap.release()
-        
+            ignore_mask_color = 255
+
+        cv2.fillPoly(mask, vertices, ignore_mask_color)
+        return cv2.bitwise_and(img, mask)
+
+    def _draw_lines(self, img, lines):
+        line_dict = {'left': [], 'right': []}
+        img_center = img.shape[1] // 2
+        for line in lines:
+            for x1, y1, x2, y2 in line:
+                if x1 < img_center and x2 < img_center:
+                    position = 'left'
+                elif x1 > img_center and x2 > img_center:
+                    position = 'right'
+                else:
+                    continue
+                line_dict[position].append(np.array([x1, y1]))
+                line_dict[position].append(np.array([x2, y2]))
+
+        for position, lines_dir in line_dict.items():
+            if lines_dir:
+                data = np.array(lines_dir)
+                data = data[data[:, 1] >= np.array(self.line_threshold)-1]
+                x, y = data[:, 0].reshape((-1, 1)), data[:, 1]
+
+                try:
+                    model = HuberRegressor(fit_intercept=True, alpha=0.0, max_iter=100, epsilon=1.9)
+                    model.fit(x, y)
+                except ValueError:
+                    model = Ridge(fit_intercept=True, alpha=0.0, random_state=0, normalize=True)
+                    model.fit(x, y)
+
+                epsilon = 1e-10
+                y1 = np.array(img.shape[0])
+                x1 = (y1 - model.intercept_) / (model.coef_ + epsilon)
+                y2 = np.array(self.line_threshold)
+                x2 = (y2 - model.intercept_) / (model.coef_ + epsilon)
+                x = np.append(x, [x1, x2], axis=0)
+
+                y_pred = model.predict(x)
+                data = np.append(x, y_pred.reshape((-1, 1)), axis=1)
+                cv2.polylines(img, np.int32([data]), isClosed=False, color=(255, 0, 0),
+                              thickness=self.line_thickness)
+
+    def _hough_lines(self, img):
+        lines = cv2.HoughLinesP(img, rho=self.hough_settings['rho'],
+                                theta=self.hough_settings['theta'],
+                                threshold=self.hough_settings['threshold'],
+                                lines=np.array([]),
+                                minLineLength=self.hough_settings['min_line_len'],
+                                maxLineGap=self.hough_settings['max_line_gap'])
+        line_img = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
+        self._draw_lines(line_img, lines)
+        return line_img
+
+    def _weighted_img(self, img, initial_img, α=0.95, β=1., γ=0.):
+        return cv2.addWeighted(initial_img, α, img, β, γ)
+
+    def detect(self, img_path):
+        """Detect lines and draw them on the image
+        """
+        img = cv2.imread(img_path)
+        img_line = self._grayscale(img)
+        img_line = self._gaussian_blur(img_line)
+        img_line = self._canny(img_line)
+        vertices = np.array([[
+            (0, img.shape[0]),
+            (img.shape[1], img.shape[0]),
+            (400, 260),
+            (600, 260)
+        ]])
+        img_line = self._region_of_interest(img_line, vertices)
+        img_line = self._hough_lines(img_line)
+        return self._weighted_img(img_line, img)
+
+
+def main(detect_type='cv'):
+    if detect_type == 'dataloader':
+        lane_detection = LaneDetection()
+        lane_detection.detect_video()
+    elif detect_type == 'video':
+        lane_detection = LaneDetection(load_dataloader=False)
+
+        cap = cv2.VideoCapture(os.path.join(os.getcwd(), 'video.mp4'))
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if ret is True:
+                lane_detection.detect(frame)
+                cv2.imshow('Frame', frame)
+                cv2.waitKey(0)
+                if cv2.waitKey(25) & 0xFF == ord('q'):
+                    break
+            else:
+                break
+        cap.release()
+    elif detect_type == 'image':
+        lane_detection = LaneDetection(load_dataloader=False)
+
+        img = cv2.imread(gc.test_img)
+        lane_detection.detect(img)
+        cv2.imshow('Image', img)
+        cv2.waitKey(0)
+    elif detect_type == 'cv':
+        lane_detection_cv = LaneDetectionCV()
+        img = lane_detection_cv.detect(gc.test_img)
+        plt.imshow(img)
+        plt.show()
+
+
+if __name__ == '__main__':
+    fire.Fire(main)
 
