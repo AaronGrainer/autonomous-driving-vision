@@ -95,6 +95,8 @@ class LaneDetection:
         out_j = self._format_pred_output(out)
         self._draw_lane_prediction(ori_img, out_j)
 
+        return ori_img
+
     def detect_video(self):
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
         video_name = os.path.join(gc.output_dir, 'test0_normal.avi')
@@ -203,10 +205,9 @@ class LaneDetectionCV:
     def _weighted_img(self, img, initial_img, α=0.95, β=1., γ=0.):
         return cv2.addWeighted(initial_img, α, img, β, γ)
 
-    def detect(self, img_path):
+    def detect(self, img):
         """Detect lines and draw them on the image
         """
-        img = cv2.imread(img_path)
         img_line = self._grayscale(img)
         img_line = self._gaussian_blur(img_line)
         img_line = self._canny(img_line)
@@ -221,25 +222,32 @@ class LaneDetectionCV:
         return self._weighted_img(img_line, img)
 
 
+def detect_video(detect_type):
+    if detect_type == 'video':
+        lane_detection = LaneDetection(load_dataloader=False)
+    elif detect_type == 'video_cv':
+        lane_detection = LaneDetectionCV()
+    else:
+        raise NotImplemented
+
+    cap = cv2.VideoCapture(os.path.join(os.getcwd(), 'video.mp4'))
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret is True:
+            frame = lane_detection.detect(frame)
+            cv2.imshow('Frame', frame)
+            cv2.waitKey(0)
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                break
+        else:
+            break
+    cap.release()
+
+
 def main(detect_type='cv'):
     if detect_type == 'dataloader':
         lane_detection = LaneDetection()
         lane_detection.detect_video()
-    elif detect_type == 'video':
-        lane_detection = LaneDetection(load_dataloader=False)
-
-        cap = cv2.VideoCapture(os.path.join(os.getcwd(), 'video.mp4'))
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if ret is True:
-                lane_detection.detect(frame)
-                cv2.imshow('Frame', frame)
-                cv2.waitKey(0)
-                if cv2.waitKey(25) & 0xFF == ord('q'):
-                    break
-            else:
-                break
-        cap.release()
     elif detect_type == 'image':
         lane_detection = LaneDetection(load_dataloader=False)
 
@@ -247,11 +255,16 @@ def main(detect_type='cv'):
         lane_detection.detect(img)
         cv2.imshow('Image', img)
         cv2.waitKey(0)
+    elif 'video' in detect_type:
+        detect_video(detect_type)
     elif detect_type == 'cv':
         lane_detection_cv = LaneDetectionCV()
-        img = lane_detection_cv.detect(gc.test_img)
+        img = cv2.imread(gc.test_img)
+        img = lane_detection_cv.detect(img)
         plt.imshow(img)
         plt.show()
+    else:
+        raise NotImplemented
 
 
 if __name__ == '__main__':

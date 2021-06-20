@@ -25,7 +25,10 @@ if __name__ == '__main__':
                 lane_detection.detect(frame)
 
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                stframe.image(frame)
+                stframe.image(frame,
+                              caption='Lanes Detected',
+                              use_column_width=True,
+                              channels='BGR')
             else:
                 break
         cap.release()
