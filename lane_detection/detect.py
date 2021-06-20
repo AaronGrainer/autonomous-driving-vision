@@ -230,7 +230,7 @@ def detect_video(detect_type):
     else:
         raise NotImplemented
 
-    cap = cv2.VideoCapture(os.path.join(os.getcwd(), 'video.mp4'))
+    cap = cv2.VideoCapture(gc.test_video)
     while cap.isOpened():
         ret, frame = cap.read()
         if ret is True:

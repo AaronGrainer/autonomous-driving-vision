@@ -2,7 +2,7 @@ import streamlit as st
 import cv2
 
 from config import global_config as gc
-from lane_detection.detect import LaneDetection
+from lane_detection.detect import LaneDetection, LaneDetectionCV
 
 
 if __name__ == '__main__':
@@ -16,15 +16,15 @@ if __name__ == '__main__':
 
         stframe = st.empty()
 
-        lane_detection = LaneDetection(load_dataloader=False)
+        # lane_detection = LaneDetection(load_dataloader=False)
+        lane_detection = LaneDetectionCV()
 
         cap = cv2.VideoCapture(gc.lane_detection_video)
         while cap.isOpened():
             ret, frame = cap.read()
             if ret:
-                lane_detection.detect(frame)
+                frame = lane_detection.detect(frame)
 
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 stframe.image(frame,
                               caption='Lanes Detected',
                               use_column_width=True,

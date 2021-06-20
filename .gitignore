@@ -144,4 +144,4 @@ lane_detection/datasets
 lane_detection/checkpoint
 lane_detection/output
 
-video.mp4
+test_asset/
