@@ -19,7 +19,7 @@ setup_logger()
 
 def get_object_dicts():
     input_data = {}
-    with open('datasets/TJHSST/train_solution_bounding_boxes.csv') as csv_file:
+    with open('object_detection/datasets/TJHSST/train_solution_bounding_boxes.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
 
         for idx, row in enumerate(csv_reader):
@@ -37,7 +37,7 @@ def get_object_dicts():
     for idx, (filename, bboxes) in enumerate(input_data.items()):
         record = {}
 
-        filepath = os.path.join('datasets/TJHSST/train', filename)
+        filepath = os.path.join('object_detection/datasets/TJHSST/train', filename)
         height, width = cv2.imread(filepath).shape[:2]
 
         record["image_id"] = idx
@@ -86,12 +86,13 @@ if __name__ == '__main__':
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 256   # faster, and good enough for this toy dataset (default: 512)
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1  # only has one class (ballon). (see https://detectron2.readthedocs.io/tutorials/datasets.html#update-the-config-for-new-datasets)
     # NOTE: this config means the number of classes, but a few popular unofficial tutorials incorrect uses num_classes+1 here.
+    cfg.OUTPUT_DIR = os.path.join(os.getcwd(), 'object_detection/detectron/output')
 
 
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
     trainer = DefaultTrainer(cfg) 
     trainer.resume_or_load(resume=False)
-    trainer.train()
+    # trainer.train()
 
 
     cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")  # path to the model we just trained
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     predictor = DefaultPredictor(cfg)
 
     dataset_dicts = get_object_dicts()
-    for d in random.sample(dataset_dicts, 3):
+    for d in random.sample(dataset_dicts, 1):
         im = cv2.imread(d["file_name"])
         outputs = predictor(im)  # format is documented at https://detectron2.readthedocs.io/tutorials/models.html#model-output-format
         v = Visualizer(im[:, :, ::-1],
@@ -107,6 +108,7 @@ if __name__ == '__main__':
                     scale=0.5,
                     instance_mode=ColorMode.IMAGE   # remove the colors of unsegmented pixels. This option is only available for segmentation models
         )
+        print('outputs["instances"]: ', outputs["instances"])
         out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
         cv2.imshow('Ballon Prediction', out.get_image()[:, :, ::-1])
         cv2.waitKey()

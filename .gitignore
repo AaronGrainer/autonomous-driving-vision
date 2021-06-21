@@ -135,7 +135,7 @@ reference/detectron2/output
 wandb
 
 object_detection/datasets
-object_detection/output
+object_detection/detectron/output
 
 semantic-segmentation/datasets
 semantic-segmentation/output
@@ -145,3 +145,6 @@ lane_detection/checkpoint
 lane_detection/output
 
 test_asset/
+
+.vscode
+yolov5s.pt
