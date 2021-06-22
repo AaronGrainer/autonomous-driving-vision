@@ -3,6 +3,7 @@ import torch
 from PIL import Image
 import cv2
 import fire
+import numpy as np
 
 from object_detection.yolov5.config import global_config as gc
 
@@ -24,14 +25,16 @@ class YoloDetector:
         torch.backends.cudnn.benchmark = True
 
     def detect(self, img):
+        img = img[:, :, ::-1].transpose(2, 0, 1)
+        img = np.ascontiguousarray(img)
+
         img = torch.from_numpy(img).to(self.device)
         img = img.half() if self.half_precision else img.float()
         img /= 255.0
-        if img.ndimension == 3:
+        if img.ndimension() == 3:
             img = img.unsqueeze(0)
-        print('img: ', img.shape)
 
-        pred = self.model([img])[0]
+        pred = self.model(img)[0]
         print('pred: ', pred)
 
 
