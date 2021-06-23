@@ -8,10 +8,14 @@ import numpy as np
 from object_detection.yolov5.config import global_config as gc
 from object_detection.yolov5.utils.general import non_max_suppression
 from object_detection.yolov5.utils.torch_utils import time_synchronized
+from object_detection.yolov5.utils.datasets import letterbox
 
 
 class YoloDetector:
     def __init__(self):
+        self.img_size = 640
+        self.stride = 32
+
         self.conf_thres = 0.25
         self.iou_thres = 0.45
         self.classes = None     # filter by class
@@ -32,8 +36,12 @@ class YoloDetector:
         # Speed up constant image size inference
         torch.backends.cudnn.benchmark = True
 
-    def detect(self, img):
-        img = img[:, :, ::-1].transpose(2, 0, 1)
+    def detect(self, img_path):
+        img_ori = cv2.imread(gc.test_image)
+
+        img = letterbox(img_ori, self.img_size, stride=self.stride)[0]
+
+        img = img_ori[:, :, ::-1].transpose(2, 0, 1)
         img = np.ascontiguousarray(img)
 
         img = torch.from_numpy(img).to(self.device)
@@ -48,14 +56,15 @@ class YoloDetector:
         pred = non_max_suppression(pred, self.conf_thres, self.iou_thres, self.classes, self.agnostic_nms, max_det=self.max_det)
         t2 = time_synchronized()
 
-        
+        # Process detections
+        for i, det in enumerate(pred):
+            p, s, im0, frame = img_path, '', img_ori.copy(), 0
 
 
 
 def main():
     yolo_detector = YoloDetector()
-    img = cv2.imread(gc.test_image)
-    yolo_detector.detect(img)
+    yolo_detector.detect(gc.test_image)
 
 
 if __name__ == '__main__':
