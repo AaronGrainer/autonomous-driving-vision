@@ -6,10 +6,18 @@ import fire
 import numpy as np
 
 from object_detection.yolov5.config import global_config as gc
+from object_detection.yolov5.utils.general import non_max_suppression
+from object_detection.yolov5.utils.torch_utils import time_synchronized
 
 
 class YoloDetector:
     def __init__(self):
+        self.conf_thres = 0.25
+        self.iou_thres = 0.45
+        self.classes = None     # filter by class
+        self.agnostic_nms = False
+        self.max_det = 1000     # maximum detections per image
+
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
 
         # Half precision if using Cuda
@@ -35,7 +43,12 @@ class YoloDetector:
             img = img.unsqueeze(0)
 
         pred = self.model(img)[0]
-        print('pred: ', pred)
+
+        # Apply NMS
+        pred = non_max_suppression(pred, self.conf_thres, self.iou_thres, self.classes, self.agnostic_nms, max_det=self.max_det)
+        t2 = time_synchronized()
+
+        
 
 
 
