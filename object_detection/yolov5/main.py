@@ -1,17 +1,19 @@
 import torch
 
-from detectron2.utils.visualizer import Visualizer, ColorMode
-from detectron2.data import MetadataCatalog
-from detectron2.structures import Instances, Boxes
+from detectron2.utils.visualizer import Visualizer
 
 import cv2
+import numpy as np
 import pandas as pd
 import fire
+import matplotlib
+import matplotlib.pyplot as plt
 
 
 class YoloDetector:
     def __init__(self):
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+        matplotlib.use('TkAgg')
 
     def _visualize(self, img, predictions):
         v = Visualizer(img, scale=1)
@@ -35,24 +37,26 @@ class YoloDetector:
 
     def detect_video(self):
         input_video = 'test_asset/usa_laguna.mp4'
-        output_video = 'object_detection/yolov5/output/yolov5_output.avi'
 
         cap = cv2.VideoCapture(input_video)
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        ret, frame = cap.read()
 
-        fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-        vout = cv2.VideoWriter(output_video, fourcc, 30.0, (width, height))
+        ax1 = plt.subplot(111)
+        im1 = ax1.imshow(frame[:, :, ::-1])
+
+        plt.ion()
 
         while cap.isOpened():
             ret, frame = cap.read()
             if ret is True:
                 frame = self._detect(frame)
-                vout.write(frame[:, :, ::-1])
+                im1.set_data(frame)
+                plt.pause(0.2)
             else:
                 break
 
-        vout.release()
+        plt.ioff()
+        plt.show()
 
 
 def main(detect_type='image'):
