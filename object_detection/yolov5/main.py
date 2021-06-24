@@ -21,17 +21,20 @@ class YoloDetector:
         for _, pred in predictions.iterrows():
             box_coord = (pred['xmin'], pred['ymin'], pred['xmax'], pred['ymax'])
             v.draw_box(box_coord, edge_color='moccasin')
+            v.draw_text(pred['name'], (pred['xmin'], pred['ymin']), font_size=8,
+                        color='moccasin', horizontal_alignment='left')
         out = v.get_output()
         return out.get_image()[:, :, ::-1]
 
     def _detect(self, img):
         results = self.model(img)
         # classes = results.names
+        # print('classes: ', classes)
         predictions = results.pandas().xyxy[0]
         return self._visualize(img, predictions)
 
     def detect_img(self, img):
-        img_pred = self._detect(img, img)
+        img_pred = self._detect(img)
         cv2.imshow('Predictions', img_pred)
         cv2.waitKey()
 
@@ -49,8 +52,8 @@ class YoloDetector:
         while cap.isOpened():
             ret, frame = cap.read()
             if ret is True:
-                frame = self._detect(frame)
-                im1.set_data(frame)
+                frame = self._detect(frame[:, :, ::-1])
+                im1.set_data(frame[:, :, ::-1])
                 plt.pause(0.2)
             else:
                 break
@@ -61,7 +64,7 @@ class YoloDetector:
 
 def main(detect_type='image'):
     if detect_type == 'image':
-        img_path = 'test_asset/solidWhiteCurve.jpg'
+        img_path = 'test_asset/usa_laguna_moment.jpg'
         img = cv2.imread(img_path)[:, :, ::-1]
 
         yolo_detector = YoloDetector()
