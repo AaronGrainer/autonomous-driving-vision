@@ -28,13 +28,23 @@ class YoloDetector:
         matplotlib.use('TkAgg')
 
     def _update_tracker(self, preds):
+        class_unique = {key: 1 for key in self.classes}
+
         detections = [[pred['xmin'], pred['ymin'], pred['xmax'], pred['ymax'], pred['confidence'], pred['class']]
                       for _, pred in preds.iterrows()]
         
         trackers = self.mot_tracker.update(detections)
-        trackers = [np.append(k, self.classes[int(k[5])]) for k in trackers]
+
+        trackers_formatted = list()
+        for track in trackers:
+            class_name = self.classes[int(track[5])]
+            class_unique_id = class_unique[class_name]
+            trackers_formatted.append(np.append(track, [class_name, class_unique_id]))
+            class_unique.update({
+                class_name: class_unique_id + 1
+            })
         
-        tracker_df = pd.DataFrame(trackers, columns=['xmin', 'ymin', 'xmax', 'ymax', 'track_id', 'class', 'name'])
+        tracker_df = pd.DataFrame(trackers_formatted, columns=['xmin', 'ymin', 'xmax', 'ymax', 'track_id', 'class', 'name', 'class_unique_id'])
         tracker_df[['xmin', 'ymin', 'xmax', 'ymax', 'track_id', 'class']] = \
             tracker_df[['xmin', 'ymin', 'xmax', 'ymax', 'track_id', 'class']].apply(pd.to_numeric, downcast='integer')
 
@@ -46,7 +56,7 @@ class YoloDetector:
         for _, pred in preds.iterrows():
             box_coord = (pred['xmin'], pred['ymin'], pred['xmax'], pred['ymax'])
             v.draw_box(box_coord, edge_color='moccasin')
-            v.draw_text(f"{pred['name']} {int(pred['track_id'])}", (pred['xmin'], pred['ymin']), font_size=8,
+            v.draw_text(f"{pred['name']} {pred['class_unique_id']}", (pred['xmin'], pred['ymin']), font_size=8,
                         color='moccasin', horizontal_alignment='left')
         
         out = v.get_output()
