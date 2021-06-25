@@ -24,22 +24,21 @@ class YoloDetector:
             min_hits=self.min_hits,
             iou_threshold=self.iou_threshold
         )
+        self.classes = None
         matplotlib.use('TkAgg')
 
     def _update_tracker(self, preds):
-        detections = [[pred['xmin'], pred['ymin'], pred['xmax'], pred['ymax'], pred['confidence']] 
+        detections = [[pred['xmin'], pred['ymin'], pred['xmax'], pred['ymax'], pred['confidence'], pred['class']]
                       for _, pred in preds.iterrows()]
-        print('detections: ', detections, len(detections))
+        
         trackers = self.mot_tracker.update(detections)
-        print('trackers: ', trackers, len(trackers))
+        trackers = [np.append(k, self.classes[int(k[5])]) for k in trackers]
+        
+        tracker_df = pd.DataFrame(trackers, columns=['xmin', 'ymin', 'xmax', 'ymax', 'track_id', 'class', 'name'])
+        tracker_df[['xmin', 'ymin', 'xmax', 'ymax', 'track_id', 'class']] = \
+            tracker_df[['xmin', 'ymin', 'xmax', 'ymax', 'track_id', 'class']].apply(pd.to_numeric, downcast='integer')
 
-        for track in trackers[:-1]:
-            preds.loc[(preds['xmin'] == track[0]) & (preds['ymin'] == track[1]) &
-                      (preds['xmax'] == track[2]) & (preds['ymax'] == track[3]), 'track_id'] = track[4]
-        print('preds: ', preds)
-        preds.dropna(subset=['track_id'], inplace=True)
-        print('preds: ', preds)
-        return preds
+        return tracker_df
 
     def _visualize(self, img, preds):
         v = Visualizer(img, scale=1)
@@ -49,13 +48,14 @@ class YoloDetector:
             v.draw_box(box_coord, edge_color='moccasin')
             v.draw_text(f"{pred['name']} {int(pred['track_id'])}", (pred['xmin'], pred['ymin']), font_size=8,
                         color='moccasin', horizontal_alignment='left')
+        
         out = v.get_output()
         return out.get_image()[:, :, ::-1]
 
     def _detect(self, img):
         results = self.model(img)
-        # classes = results.names
-        # print('classes: ', classes)
+        if not self.classes:
+            self.classes = results.names
         preds = results.pandas().xyxy[0]
         preds = self._update_tracker(preds)
         return self._visualize(img, preds)

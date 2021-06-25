@@ -120,7 +120,7 @@ class KalmanBoxTracker(object):
       self.hit_streak = 0
       self.age = 0
 
-    def update(self,bbox):
+    def update(self, bbox):
         """
         Updates the state vector with observed bbox.
         """
@@ -151,14 +151,14 @@ class KalmanBoxTracker(object):
         return convert_x_to_bbox(self.kf.x)
 
 
-def associate_detections_to_trackers(detections,trackers,iou_threshold = 0.3):
+def associate_detections_to_trackers(detections, trackers, iou_threshold=0.3):
     """
     Assigns detections to tracked object (both represented as bounding boxes)
 
     Returns 3 lists of matches, unmatched_detections and unmatched_trackers
     """
-    if(len(trackers)==0):
-        return np.empty((0,2),dtype=int), np.arange(len(detections)), np.empty((0,5),dtype=int)
+    if len(trackers) == 0:
+        return np.empty((0,2), dtype=int), np.arange(len(detections)), np.empty((0,5), dtype=int)
 
     iou_matrix = iou_batch(detections, trackers)
 
@@ -173,25 +173,25 @@ def associate_detections_to_trackers(detections,trackers,iou_threshold = 0.3):
 
     unmatched_detections = []
     for d, det in enumerate(detections):
-        if(d not in matched_indices[:,0]):
+        if d not in matched_indices[:,0]:
             unmatched_detections.append(d)
     unmatched_trackers = []
     for t, trk in enumerate(trackers):
-        if(t not in matched_indices[:,1]):
+        if t not in matched_indices[:,1]:
             unmatched_trackers.append(t)
 
-    #filter out matched with low IOU
+    # Filter out matched with low IOU
     matches = []
     for m in matched_indices:
-        if(iou_matrix[m[0], m[1]]<iou_threshold):
+        if iou_matrix[m[0], m[1]] < iou_threshold:
             unmatched_detections.append(m[0])
             unmatched_trackers.append(m[1])
         else:
             matches.append(m.reshape(1,2))
     if len(matches) == 0:
-        matches = np.empty((0,2),dtype=int)
+        matches = np.empty((0,2), dtype=int)
     else:
-        matches = np.concatenate(matches,axis=0)
+        matches = np.concatenate(matches, axis=0)
 
     return matches, np.array(unmatched_detections), np.array(unmatched_trackers)
 
@@ -205,6 +205,7 @@ class Sort(object):
         self.min_hits = min_hits
         self.iou_threshold = iou_threshold
         self.trackers = []
+        self.classes = []
         self.frame_count = 0
 
     def update(self, dets=np.empty((0, 5))):
@@ -229,7 +230,8 @@ class Sort(object):
         trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
         for t in reversed(to_del):
             self.trackers.pop(t)
-        matched, unmatched_dets, unmatched_trks = associate_detections_to_trackers(dets,trks, self.iou_threshold)
+            self.classes.pop(t)
+        matched, unmatched_dets, unmatched_trks = associate_detections_to_trackers(dets, trks, self.iou_threshold)
 
         # update matched trackers with assigned detections
         for m in matched:
@@ -239,15 +241,17 @@ class Sort(object):
         for i in unmatched_dets:
             trk = KalmanBoxTracker(dets[i])
             self.trackers.append(trk)
+            self.classes.append(dets[i][5])
         i = len(self.trackers)
-        for trk in reversed(self.trackers):
+        for index, trk in reversed(list(enumerate(self.trackers))):
             d = trk.get_state()[0]
             if (trk.time_since_update < 1) and (trk.hit_streak >= self.min_hits or self.frame_count <= self.min_hits):
-                ret.append(np.concatenate((d,[trk.id+1])).reshape(1,-1)) # +1 as MOT benchmark requires positive
+                ret.append(np.concatenate((d, [trk.id+1], [self.classes[index]])).reshape(1, -1)) # +1 as MOT benchmark requires positive
             i -= 1
             # remove dead tracklet
             if trk.time_since_update > self.max_age:
                 self.trackers.pop(i)
+                self.classes.pop(i)
         if len(ret) > 0:
             return np.concatenate(ret)
         return np.empty((0,5))
