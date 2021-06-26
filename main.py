@@ -1,6 +1,7 @@
 from detectron2.utils.visualizer import Visualizer
 
 from object_detection.yolov5.detect import YoloDetector
+from object_detection.utils.trafic_light import detect_trafic_light_color
 from depth_estimation.monodepth.detect import MonoDepthEstimator
 
 import cv2
@@ -20,12 +21,18 @@ class AutonomousDetector:
             box_coord = (pred['xmin'], pred['ymin'], pred['xmax'], pred['ymax'])
             v.draw_box(box_coord, edge_color='moccasin')
 
-            if pred['name'] == 'car':
-                text = f"{pred['name']} {pred['class_unique_id']} {pred['depth']:.1f}m"
+            classname = pred['name'].title()
+            if classname == 'Car':
+                text = f"{classname} ({pred['depth']:.1f}m)\n" \
+                       f"ID: {pred['class_unique_id']}"
+            elif classname == 'Traffic Light':
+                text = f"{classname} ({pred['trafic_color']})\n" \
+                       f"ID: {pred['class_unique_id']}"
             else:
-                text = f"{pred['name']} {pred['class_unique_id']}"
+                text = f"{classname}\n" \
+                       f"ID: {pred['class_unique_id']}"
 
-            v.draw_text(text, (pred['xmin'], max(0, pred['ymin'] - 14)), font_size=8,
+            v.draw_text(text, (pred['xmin'], max(0, pred['ymin'] - 16)), font_size=5,
                         color='moccasin', horizontal_alignment='left')
         
         out = v.get_output()
@@ -33,7 +40,8 @@ class AutonomousDetector:
 
     def detect(self, img):
         preds = self.yolo_detector.detect(img, visualize=False, return_preds=True)
-        preds = self.mono_depth_estimator.detect_img_object(img, preds)
+        preds = self.mono_depth_estimator.detect_img_object(img, preds, class_only=['car'])
+        preds = detect_trafic_light_color(img, preds)
         return self._visualize(img, preds)
 
     def detect_img(self, img):

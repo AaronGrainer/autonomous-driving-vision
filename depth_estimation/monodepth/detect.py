@@ -70,12 +70,15 @@ class MonoDepthEstimator:
         
         return metric_depth
 
-    def _get_bbox_depth(self, metric_depth, preds):
+    def _get_bbox_depth(self, metric_depth, preds, class_only):
         object_depths = []
         for _, pred in preds.iterrows():
-            box_depth = metric_depth[0][0][int(pred['ymin']):int(pred['ymax']), int(pred['xmin']):int(pred['xmax'])]
-            object_depth = box_depth.mean()
-            object_depths.append(object_depth)
+            if pred['name'] in class_only:
+                box_depth = metric_depth[0][0][int(pred['ymin']):int(pred['ymax']), int(pred['xmin']):int(pred['xmax'])]
+                object_depth = box_depth.mean()
+                object_depths.append(object_depth)
+            else:
+                object_depths.append(0)
         preds['depth'] = object_depths
         
         return preds
@@ -110,9 +113,9 @@ class MonoDepthEstimator:
         cv2.imshow('preds', colormapped_im)
         cv2.waitKey()
 
-    def detect_img_object(self, img, preds):
+    def detect_img_object(self, img, preds, class_only=None):
         depth_metrics = self._detect(img, get_depth=True)
-        preds = self._get_bbox_depth(depth_metrics, preds)
+        preds = self._get_bbox_depth(depth_metrics, preds, class_only)
         return preds
 
     def detect_video(self, input_video):
