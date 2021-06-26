@@ -75,9 +75,7 @@ class YoloDetector:
         cv2.imshow('preds', img_pred)
         cv2.waitKey()
 
-    def detect_video(self):
-        input_video = 'test_asset/usa_laguna.mp4'
-
+    def detect_video(self, input_video):
         cap = cv2.VideoCapture(input_video)
         ret, frame = cap.read()
 
@@ -85,7 +83,6 @@ class YoloDetector:
         im1 = ax1.imshow(frame[:, :, ::-1])
 
         plt.ion()
-
         while cap.isOpened():
             ret, frame = cap.read()
             if ret is True:
@@ -94,7 +91,6 @@ class YoloDetector:
                 plt.pause(0.2)
             else:
                 break
-
         plt.ioff()
         plt.show()
 
@@ -107,8 +103,10 @@ def main(detect_type='image'):
         yolo_detector = YoloDetector()
         yolo_detector.detect_img(img)
     elif detect_type == 'video':
+        input_video = 'test_asset/usa_laguna.mp4'
+
         yolo_detector = YoloDetector()
-        yolo_detector.detect_video()
+        yolo_detector.detect_video(input_video)
     else:
         raise NotImplemented
 

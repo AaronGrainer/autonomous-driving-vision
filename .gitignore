@@ -144,6 +144,8 @@ lane_detection/datasets
 lane_detection/checkpoint
 lane_detection/output
 
+depth_estimation/monodepth/models
+
 test_asset/
 
 .vscode
