@@ -70,6 +70,14 @@ class MonoDepthEstimator:
         
         return metric_depth
 
+    def _get_bbox_depth(self, metric_depth, preds):
+        for pred in preds:
+            box_depth = metric_depth[0][0][int(pred['xmin']):int(pred['xmax']), int(pred['ymin']):int(pred['ymax'])]
+            object_depth = box_depth.mean()
+            pred['depth'] = round(object_depth, 1)
+        
+        return pred
+
     def _visualizer(self, disp):
         """Display colormapped depth image
         """
@@ -99,6 +107,11 @@ class MonoDepthEstimator:
         colormapped_im = self._detect(img)
         cv2.imshow('preds', colormapped_im)
         cv2.waitKey()
+
+    def detect_img_object(self, img, preds):
+        depth_metrics = self._detect(img, get_depth=True)
+        preds = self._get_bbox_depth(depth_metrics, preds)
+        return preds
 
     def detect_video(self, input_video):
         cap = cv2.VideoCapture(input_video)
@@ -132,6 +145,12 @@ def main(detect_type='image'):
 
         mono_depth_estimator = MonoDepthEstimator()
         mono_depth_estimator.detect_img(img)
+    elif detect_type == 'image_bbox':
+        img_path = 'test_asset/usa_laguna_moment.jpg'
+        img = cv2.imread(img_path)[:, :, ::-1]
+
+        mono_depth_estimator = MonoDepthEstimator()
+        mono_depth_estimator.detect_img_object(img)
     elif detect_type == 'video':
         input_video = 'test_asset/usa_laguna.mp4'
 
