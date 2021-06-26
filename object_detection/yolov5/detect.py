@@ -62,16 +62,22 @@ class YoloDetector:
         out = v.get_output()
         return out.get_image()[:, :, ::-1]
 
-    def _detect(self, img):
+    def detect(self, img, visualize=True, return_preds=False):
         results = self.model(img)
         if not self.classes:
             self.classes = results.names
         preds = results.pandas().xyxy[0]
         preds = self._update_tracker(preds)
-        return self._visualize(img, preds)
+
+        if visualize:
+            return self._visualize(img, preds)
+        elif return_preds:
+            return preds
+        else:
+            return
 
     def detect_img(self, img):
-        img_pred = self._detect(img)
+        img_pred = self.detect(img)
         cv2.imshow('preds', img_pred)
         cv2.waitKey()
 
@@ -86,7 +92,7 @@ class YoloDetector:
         while cap.isOpened():
             ret, frame = cap.read()
             if ret is True:
-                frame = self._detect(frame[:, :, ::-1])
+                frame = self.detect(frame[:, :, ::-1])
                 im1.set_data(frame[:, :, ::-1])
                 plt.pause(0.2)
             else:

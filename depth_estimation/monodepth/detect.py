@@ -71,12 +71,14 @@ class MonoDepthEstimator:
         return metric_depth
 
     def _get_bbox_depth(self, metric_depth, preds):
-        for pred in preds:
-            box_depth = metric_depth[0][0][int(pred['xmin']):int(pred['xmax']), int(pred['ymin']):int(pred['ymax'])]
+        object_depths = []
+        for _, pred in preds.iterrows():
+            box_depth = metric_depth[0][0][int(pred['ymin']):int(pred['ymax']), int(pred['xmin']):int(pred['xmax'])]
             object_depth = box_depth.mean()
-            pred['depth'] = round(object_depth, 1)
+            object_depths.append(object_depth)
+        preds['depth'] = object_depths
         
-        return pred
+        return preds
 
     def _visualizer(self, disp):
         """Display colormapped depth image
