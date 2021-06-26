@@ -51,12 +51,12 @@ class YoloDetector:
         return tracker_df
 
     def _visualize(self, img, preds):
-        v = Visualizer(img, scale=1)
+        v = Visualizer(img, scale=1.5)
 
         for _, pred in preds.iterrows():
             box_coord = (pred['xmin'], pred['ymin'], pred['xmax'], pred['ymax'])
             v.draw_box(box_coord, edge_color='moccasin')
-            v.draw_text(f"{pred['name']} {pred['class_unique_id']}", (pred['xmin'], pred['ymin']), font_size=8,
+            v.draw_text(f"{pred['name']} {pred['class_unique_id']}", (pred['xmin'], max(0, pred['ymin'] - 14)), font_size=8,
                         color='moccasin', horizontal_alignment='left')
         
         out = v.get_output()
