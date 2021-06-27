@@ -1,4 +1,5 @@
 import torch
+from torchvision import transforms
 
 from detectron2.utils.visualizer import Visualizer
 
@@ -26,6 +27,25 @@ class YoloDetector:
         )
         self.classes = None
         matplotlib.use('TkAgg')
+
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        else:
+            self.device = torch.device("cpu")
+
+    def _predict(self, img):
+        print('img: ', img, img.shape)
+        with torch.no_grad():
+            # img = transforms.ToTensor()(img.copy()).unsqueeze(0)
+            # print('img: ', img, img.shape)
+            # img = img.to(self.device)
+
+            results = self.model(img)
+            if not self.classes:
+                self.classes = results.names
+            preds = results.pandas().xyxy[0]
+
+        return preds
 
     def _update_tracker(self, preds):
         class_unique = {key: 1 for key in self.classes}
@@ -63,10 +83,7 @@ class YoloDetector:
         return out.get_image()[:, :, ::-1]
 
     def detect(self, img, visualize=True, return_preds=False):
-        results = self.model(img)
-        if not self.classes:
-            self.classes = results.names
-        preds = results.pandas().xyxy[0]
+        preds = self._predict(img)
         preds = self._update_tracker(preds)
 
         if visualize:
