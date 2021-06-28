@@ -33,8 +33,8 @@ def get_trafic_light_color(img):
     redCount = np.count_nonzero(region)
     region = cv2.bitwise_and(histScaled,histScaled,mask=greenMask)
     greenCount = np.count_nonzero(region)
-    print('redCount:', redCount)
-    print('greenCount:', greenCount)
+    # print('redCount:', redCount)
+    # print('greenCount:', greenCount)
 
     # Find color
     threshCount = 40
@@ -42,8 +42,8 @@ def get_trafic_light_color(img):
         color = "red"
     elif greenCount > redCount and greenCount > threshCount:
         color = "green"
-    elif redCount < threshCount and greenCount < threshCount:
-        color = "yellow"
+    # elif redCount < threshCount and greenCount < threshCount:
+    #     color = "yellow"
     else:
         color = "other"
 
@@ -51,15 +51,15 @@ def get_trafic_light_color(img):
 
 
 def detect_trafic_light_color(img, preds):
-    trafic_colors = []
+    traffic_colors = []
     for _, pred in preds.iterrows():
         if pred['name'] == 'traffic light':
-            trafic_img = img[int(pred['ymin']):int(pred['ymax']), int(pred['xmin']):int(pred['xmax'])]
-            trafic_color = get_trafic_light_color(trafic_img[:, :, ::-1])
-            trafic_colors.append(trafic_color)
+            traffic_img = img[int(pred['ymin']):int(pred['ymax']), int(pred['xmin']):int(pred['xmax'])]
+            traffic_color = get_trafic_light_color(traffic_img[:, :, ::-1])
+            traffic_colors.append(traffic_color)
         else:
-            trafic_colors.append(0)
-    preds['trafic_color'] = trafic_colors
+            traffic_colors.append(0)
+    preds['traffic_color'] = traffic_colors
     
     return preds
 

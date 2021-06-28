@@ -26,7 +26,8 @@ class AutonomousDetector:
                 text = f"{classname} ({pred['depth']:.1f}m)\n" \
                        f"ID: {pred['class_unique_id']}"
             elif classname == 'Traffic Light':
-                text = f"{classname} ({pred['trafic_color']})\n" \
+                traffic_color = f"({pred['traffic_color']})" if pred['traffic_color'] != 'other' else ''
+                text = f"{classname} {traffic_color}\n" \
                        f"ID: {pred['class_unique_id']}"
             else:
                 text = f"{classname}\n" \

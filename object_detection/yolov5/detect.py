@@ -34,7 +34,7 @@ class YoloDetector:
             self.device = torch.device("cpu")
 
     def _predict(self, img):
-        print('img: ', img, img.shape)
+        # print('img: ', img, img.shape)
         with torch.no_grad():
             # img = transforms.ToTensor()(img.copy()).unsqueeze(0)
             # print('img: ', img, img.shape)
