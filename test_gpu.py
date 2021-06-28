@@ -67,7 +67,7 @@ if __name__ == '__main__':
             return x
 
 
-    net = Net()
+    net = Net().cuda()
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
@@ -79,6 +79,8 @@ if __name__ == '__main__':
         for i, data in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
+            inputs = inputs.to('cuda')
+            labels = labels.to('cuda')
 
             # zero the parameter gradients
             optimizer.zero_grad()

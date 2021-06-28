@@ -5,6 +5,7 @@ import matplotlib.cm as cm
 import fire
 import cv2
 import matplotlib.pyplot as plt
+import time
 
 import torch
 from torchvision import transforms
@@ -133,10 +134,12 @@ class MonoDepthEstimator:
         while cap.isOpened():
             ret, frame = cap.read()
             if ret is True:
+                start_time = time.time()
                 frame_pred = self._detect(frame[:, :, ::-1])
                 im1.set_data(frame[:, :, ::-1])
                 im2.set_data(frame_pred[:, :, ::-1])
                 plt.pause(0.2)
+                # print("FPS: ", 1.0 / (time.time() - start_time))
             else:
                 break
         plt.ioff()
