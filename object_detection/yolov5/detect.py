@@ -1,5 +1,4 @@
 import torch
-from torchvision import transforms
 
 from detectron2.utils.visualizer import Visualizer
 
@@ -35,12 +34,7 @@ class YoloDetector:
             self.device = torch.device("cpu")
 
     def _predict(self, img):
-        # print('img: ', img, img.shape)
         with torch.no_grad():
-            # img = transforms.ToTensor()(img.copy()).unsqueeze(0)
-            # print('img: ', img, img.shape)
-            # img = img.to(self.device)
-
             results = self.model(img)
             if not self.classes:
                 self.classes = results.names
@@ -113,8 +107,8 @@ class YoloDetector:
                 start_time = time.time()
                 frame = self.detect(frame[:, :, ::-1])
                 im1.set_data(frame[:, :, ::-1])
-                plt.pause(0.2)
-                # print("FPS: ", 1.0 / (time.time() - start_time))
+                plt.pause(0.001)
+                print("FPS: ", 1.0 / (time.time() - start_time))
             else:
                 break
         plt.ioff()

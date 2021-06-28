@@ -138,7 +138,7 @@ class MonoDepthEstimator:
                 frame_pred = self._detect(frame[:, :, ::-1])
                 im1.set_data(frame[:, :, ::-1])
                 im2.set_data(frame_pred[:, :, ::-1])
-                plt.pause(0.2)
+                plt.pause(0.001)
                 # print("FPS: ", 1.0 / (time.time() - start_time))
             else:
                 break

@@ -63,7 +63,7 @@ class AutonomousDetector:
             if ret is True:
                 frame = self.detect(frame[:, :, ::-1])
                 im1.set_data(frame[:, :, ::-1])
-                plt.pause(0.2)
+                plt.pause(0.001)
             else:
                 break
         plt.ioff()
