@@ -7,6 +7,7 @@ from depth_estimation.monodepth.detect import MonoDepthEstimator
 import cv2
 import matplotlib.pyplot as plt
 import fire
+import time
 
 
 class AutonomousDetector:
@@ -61,9 +62,11 @@ class AutonomousDetector:
         while cap.isOpened():
             ret, frame = cap.read()
             if ret is True:
+                start_time = time.time()
                 frame = self.detect(frame[:, :, ::-1])
                 im1.set_data(frame[:, :, ::-1])
-                plt.pause(0.001)
+                plt.pause(0.005)
+                print("FPS: ", 1.0 / (time.time() - start_time))
             else:
                 break
         plt.ioff()
