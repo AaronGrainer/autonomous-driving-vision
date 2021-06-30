@@ -9,8 +9,10 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import torch.backends.cudnn as cudnn
+from torchvision import transforms
 
 from lane_detection.ddr_net.ddrnet_23_slim import get_seg_model
+from lane_detection.ddr_net.utils import Vedio, Map16
 
 
 def pad_image(image, h, w, size, padvalue):
@@ -42,17 +44,21 @@ def rand_crop(image, label):
     return image, label
 
 
-def multi_scale_aug(self, image, label=None, rand_scale=1, rand_crop=True):
+def multi_scale_aug(image, label=None, rand_scale=1, rand_crop=True):
+    print('image: ', image, image.shape)
     base_size = 2048
 
-    long_size = np.int(base_size * rand_scale + 0.5)
+    long_size = np.int64(base_size * rand_scale + 0.5)
     h, w = image.shape[:2]
+    print('h, w: ', h, w)
     if h > w:
+        new_w = np.int64(w * long_size / h + 0.5)
         new_h = long_size
-        new_w = np.int(w * long_size / h + 0.5)
     else:
         new_w = long_size
-        new_h = np.int(h * long_size / w + 0.5)
+        new_h = np.int64(h * long_size / w + 0.5)
+    print('new_w: ', new_w)
+    print('new_h: ', new_h)
 
     image = cv2.resize(image, (new_w, new_h),
                         interpolation=cv2.INTER_LINEAR)
@@ -63,7 +69,7 @@ def multi_scale_aug(self, image, label=None, rand_scale=1, rand_crop=True):
         return image
 
     if rand_crop:
-        image, label = self.rand_crop(image, label)
+        image, label = rand_crop(image, label)
 
     return image, label
 
@@ -109,7 +115,8 @@ def multi_scale_inference(model, image, scales=[1], flip=False):
 
     batch, _, ori_height, ori_width = image.size()
     assert batch == 1, "only supporting batchsize 1."
-    image = image.numpy()[0].transpose((1,2,0)).copy()
+    # image = image.numpy()[0].transpose((1, 2, 0)).copy()
+    image = image.squeeze(0).numpy().transpose((1, 2, 0)).copy()
 
     num_classes = 19
     crop_size = (512, 1024)
@@ -128,7 +135,7 @@ def multi_scale_inference(model, image, scales=[1], flip=False):
         if scale <= 1.0:
             new_img = new_img.transpose((2, 0, 1))
             new_img = np.expand_dims(new_img, axis=0)
-            new_img = torch.from_numpy(new_img)
+            new_img = torch.from_numpy(new_img).cuda()
             preds = inference(model, new_img, flip)
             preds = preds[:, :, 0:height, 0:width]
 
@@ -145,9 +152,22 @@ def test(model, sv_dir='', sv_pred=True):
     FLIP_TEST = False
     ALIGN_CORNERS = False
 
+    vedioCap = Vedio('lane_detection/ddr_net/output/cdOffice.mp4')
+    map16 = Map16(vedioCap)
+
     with torch.no_grad():
-        image, size, name = batch
-        size = size[0]
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
+
+        image = cv2.imread('test_asset/solidWhiteCurve.jpg', cv2.IMREAD_COLOR)
+        image = image.astype(np.float32)[:, :, ::-1]
+        image = image / 255.0
+        image -= mean
+        image /= std
+        # image = image.transpose((2, 0, 1))
+        size = np.array(image.shape)
+
+        image = transforms.ToTensor()(image).unsqueeze(0)
         pred = multi_scale_inference(model,
                                      image,
                                      scales=SCALE_LIST,
@@ -159,7 +179,7 @@ def test(model, sv_dir='', sv_pred=True):
 
         if sv_pred:
             # mean=[0.485, 0.456, 0.406],
-            #  std=[0.229, 0.224, 0.225]
+            # std=[0.229, 0.224, 0.225]
             image = image.squeeze(0)
             image = image.numpy().transpose((1,2,0))
             image *= [0.229, 0.224, 0.225]
@@ -169,11 +189,13 @@ def test(model, sv_dir='', sv_pred=True):
 
             _, pred = torch.max(pred, dim=1)
             pred = pred.squeeze(0).cpu().numpy()
-            map16.visualize_result(image, pred, sv_dir, name[0]+'.jpg')
+            map16.visualize_result(image, pred, sv_dir, 'solidWhiteCurve.jpg')
             # sv_path = os.path.join(sv_dir, 'test_results')
             # if not os.path.exists(sv_path):
             #     os.mkdir(sv_path)
             # test_dataset.save_pred(image, pred, sv_path, name)
+
+    vedioCap.releaseCap()
 
 
 def main():
@@ -188,6 +210,8 @@ def main():
 
     dump_output = model(dump_input.cuda())
     # print('dump_output: ', dump_output)
+
+    test(model, sv_dir='lane_detection/ddr_net/output/map16')
 
 
 if __name__ == '__main__':
