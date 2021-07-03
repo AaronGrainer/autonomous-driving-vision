@@ -1,0 +1,19 @@
+general:
+    # ImageNet pre-trained model's general statistics
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+
+culane:
+    num_classes: 5
+    weights: [0.4, 1, 1, 1, 1]
+    pretrained_weights: lane_detection/auto_drive/checkpoint/erfnet_encoder_pretrained.pth.tar
+    erfnet_model_file: lane_detection/auto_drive/checkpoint/erfnet_baseline_culane.pt
+    mixed_precision: true
+    input_sizes: [ !!python/tuple [288, 800], !!python/tuple [590, 1640] ]
+    max_lane: 4
+    colors: [ [ 0, 0, 0 ],
+              [ 0, 255, 0 ], [ 0, 0, 255 ], [ 255, 0, 0 ], [ 255, 255, 0 ],
+              [ 0, 0, 0 ] ]
+    gap: 20 # Y pixel gap per sampling point
+    ppl: 18 # Points per lane
+    threshold: 0.3  # Threshold for lane generation from segmentation mask

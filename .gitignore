@@ -147,6 +147,8 @@ lane_detection/parsing_net/output
 lane_detection/ddr_net/pretrained_models/
 lane_detection/ddr_net/output/
 
+lane_detection/auto_drive/checkpoint
+
 depth_estimation/monodepth/models
 
 test_asset/
