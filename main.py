@@ -3,6 +3,7 @@ from detectron2.utils.visualizer import Visualizer
 from object_detection.yolov5.detect import YoloDetector
 from object_detection.utils.trafic_light import detect_trafic_light_color
 from depth_estimation.monodepth.detect import MonoDepthEstimator
+from lane_detection.auto_drive.detect import LaneDetector
 
 import cv2
 import matplotlib.pyplot as plt
@@ -14,9 +15,10 @@ class AutonomousDetector:
     def __init__(self):
         self.yolo_detector = YoloDetector()
         self.mono_depth_estimator = MonoDepthEstimator()
+        self.lane_detector = LaneDetector()
 
-    def _visualize(self, img, preds):
-        v = Visualizer(img, scale=1.5)
+    def _visualize(self, img, preds, all_lanes):
+        v = Visualizer(img, scale=1)
 
         for _, pred in preds.iterrows():
             box_coord = (pred['xmin'], pred['ymin'], pred['xmax'], pred['ymax'])
@@ -36,6 +38,13 @@ class AutonomousDetector:
 
             v.draw_text(text, (pred['xmin'], max(0, pred['ymin'] - 16)), font_size=5,
                         color='moccasin', horizontal_alignment='left')
+
+        for lanes in all_lanes:
+            if lanes:
+                # Trivially limit lanes to center lane
+                if lanes[0][0] >= 250 and lanes[0][0] <= 1050:
+                    lane_pts = list(zip(*lanes))
+                    v.draw_line(lane_pts[0], lane_pts[1], color='cornflowerblue')
         
         out = v.get_output()
         return out.get_image()[:, :, ::-1]
@@ -44,16 +53,21 @@ class AutonomousDetector:
         preds = self.yolo_detector.detect(img, visualize=False, return_preds=True)
         preds = self.mono_depth_estimator.detect_img_object(img, preds, class_only=['car'])
         preds = detect_trafic_light_color(img, preds)
-        return self._visualize(img, preds)
+        all_lanes = self.lane_detector.detect_img_lanes(img)
+        return self._visualize(img, preds, all_lanes)
 
     def detect_img(self, img):
         img_pred = self.detect(img)
         cv2.imshow('preds', img_pred)
         cv2.waitKey()
 
-    def detect_video(self, input_video):
+    def detect_video(self, input_video, frame_skip):
         cap = cv2.VideoCapture(input_video)
         ret, frame = cap.read()
+
+        if frame_skip:
+            for _ in range(frame_skip):
+                _, _ = cap.read()
 
         ax1 = plt.subplot(111)
         im1 = ax1.imshow(frame[:, :, ::-1])
@@ -73,7 +87,7 @@ class AutonomousDetector:
         plt.show()
 
 
-def main(detect_type='image'):
+def main(detect_type='image', frame_skip: int =None):
     if detect_type == 'image':
         img_path = 'test_asset/usa_laguna_moment.jpg'
         img = cv2.imread(img_path)[:, :, ::-1]
@@ -84,7 +98,7 @@ def main(detect_type='image'):
         input_video = 'test_asset/usa_laguna.mp4'
 
         autonomous_detector = AutonomousDetector()
-        autonomous_detector.detect_video(input_video)
+        autonomous_detector.detect_video(input_video, frame_skip)
     else:
         raise ValueError
 

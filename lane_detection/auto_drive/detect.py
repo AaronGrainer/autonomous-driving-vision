@@ -77,7 +77,7 @@ class LaneDetector:
             prob_map = F.interpolate(output['out'], size=self.input_sizes, mode='bilinear',
                                      align_corners=True).softmax(dim=1)
             existence_conf = output['lane'].sigmoid()
-            existence = existence_conf > 0.5
+            existence = existence_conf > 0.85
 
             if self.max_lane != 0:  # Lane max number prior for testing
                 # Maybe too slow (but should be faster than topk/sort),
@@ -124,6 +124,10 @@ class LaneDetector:
         img = self.detect(img)
         cv2.imshow('preds', img)
         cv2.waitKey()
+
+    def detect_img_lanes(self, img):
+        all_lanes = self._predict(img)
+        return all_lanes
 
     def detect_video(self, input_video):
         cap = cv2.VideoCapture(input_video)
