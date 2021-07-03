@@ -4,6 +4,8 @@ import yaml
 from collections import OrderedDict
 import warnings
 from PIL import Image
+import matplotlib.pyplot as plt
+import time
 
 import torch
 from torchvision.transforms import ToTensor, Compose, Resize, Normalize
@@ -59,16 +61,17 @@ class LaneDetector:
         all_lanes = []
         self.model.eval()
 
+        img_input = Image.fromarray(img)
         transforms = Compose([
             Resize(size=self.input_sizes[0]),
             ToTensor(),
             Normalize(mean=self.mean, std=self.std)
         ])
-        img = transforms(img).unsqueeze(0)
+        img_input = transforms(img_input).unsqueeze(0)
 
-        img = img.to(self.device)
+        img_input = img_input.to(self.device)
         with autocast(self.mixed_precision):
-            output = self.model(img)
+            output = self.model(img_input)
 
             prob_map = torch.nn.functional.interpolate(output['out'], size=self.input_sizes[0], mode='bilinear',
                                                        align_corners=True).softmax(dim=1)
@@ -91,20 +94,63 @@ class LaneDetector:
         for j in range(existence.shape[0]):
             lane_coordinates = prob_to_lines(prob_map[j], existence[j], resize_shape=self.input_sizes[1],
                                              gap=self.gap, ppl=self.ppl, thresh=self.threshold)
-            print('lane_coordinates: ', lane_coordinates)
+            all_lanes.extend(lane_coordinates)
+
+        return all_lanes
+
+    def _visualizer(self, img, all_lanes):
+        img = img.copy()
+        for lanes in all_lanes:
+            if lanes:
+                for (x, y) in lanes:
+                    cv2.circle(img, (int(x), int(y)), radius=3, color=(0, 0, 255), thickness=-1)
+
+        return img[:, :, ::-1]
+
+    def detect(self, img):
+        all_lanes = self._predict(img)
+        return self._visualizer(img, all_lanes)
 
     def detect_img(self, img):
-        self._predict(img)
+        img = self.detect(img)
+        cv2.imshow('preds', img)
+        cv2.waitKey()
+
+    def detect_video(self, input_video):
+        cap = cv2.VideoCapture(input_video)
+        ret, frame = cap.read()
+
+        ax1 = plt.subplot(111)
+        im1 = ax1.imshow(frame)
+
+        plt.ion()
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if ret is True:
+                start_time = time.time()
+                frame = self.detect(frame)
+                im1.set_data(frame)
+                plt.pause(0.001)
+                print("FPS: ", 1.0 / (time.time() - start_time))
+            else:
+                break
+        plt.ioff()
+        plt.show()
 
 
 def main(detect_type='image'):
     if detect_type == 'image':
         img_path = 'test_asset/usa_laguna_moment.jpg'
-        # img = cv2.imread(img_path)[:, :, ::-1]
-        img = Image.open(img_path).convert('RGB')
+        img = cv2.imread(img_path)[:, :, ::-1]
+        # img = Image.open(img_path).convert('RGB')
 
         lane_detector = LaneDetector()
         lane_detector.detect_img(img)
+    elif detect_type == 'video':
+        input_video = 'test_asset/usa_laguna.mp4'
+
+        lane_detector = LaneDetector()
+        lane_detector.detect_video(input_video)
     else:
         raise NotImplemented
 

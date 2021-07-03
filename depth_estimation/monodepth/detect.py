@@ -95,7 +95,7 @@ class MonoDepthEstimator:
 
         return colormapped_im
 
-    def _detect(self, img, get_depth=False):
+    def detect(self, img, get_depth=False):
         original_height, original_width, _ = img.shape
 
         outputs = self._predict(img)
@@ -110,19 +110,19 @@ class MonoDepthEstimator:
             return self._visualizer(disp_resized)
 
     def detect_img(self, img):
-        colormapped_im = self._detect(img)
+        colormapped_im = self.detect(img)
         cv2.imshow('preds', colormapped_im)
         cv2.waitKey()
 
     def detect_img_object(self, img, preds, class_only=None):
-        depth_metrics = self._detect(img, get_depth=True)
+        depth_metrics = self.detect(img, get_depth=True)
         preds = self._get_bbox_depth(depth_metrics, preds, class_only)
         return preds
 
     def detect_video(self, input_video):
         cap = cv2.VideoCapture(input_video)
         ret, frame = cap.read()
-        frame_pred = self._detect(frame[:, :, ::-1])
+        frame_pred = self.detect(frame[:, :, ::-1])
 
         ax1 = plt.subplot(1, 2, 1)
         ax2 = plt.subplot(1, 2, 2)
@@ -135,7 +135,7 @@ class MonoDepthEstimator:
             ret, frame = cap.read()
             if ret is True:
                 start_time = time.time()
-                frame_pred = self._detect(frame[:, :, ::-1])
+                frame_pred = self.detect(frame[:, :, ::-1])
                 im1.set_data(frame[:, :, ::-1])
                 im2.set_data(frame_pred[:, :, ::-1])
                 plt.pause(0.001)
