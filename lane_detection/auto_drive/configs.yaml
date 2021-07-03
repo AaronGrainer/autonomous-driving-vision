@@ -9,7 +9,7 @@ culane:
     pretrained_weights: lane_detection/auto_drive/checkpoint/erfnet_encoder_pretrained.pth.tar
     erfnet_model_file: lane_detection/auto_drive/checkpoint/erfnet_baseline_culane.pt
     mixed_precision: true
-    input_sizes: [ !!python/tuple [288, 800], !!python/tuple [590, 1640] ]
+    input_sizes: !!python/tuple [288, 800]
     max_lane: 4
     colors: [ [ 0, 0, 0 ],
               [ 0, 255, 0 ], [ 0, 0, 255 ], [ 255, 0, 0 ], [ 255, 255, 0 ],

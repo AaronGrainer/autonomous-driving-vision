@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import time
 
 import torch
+import torch.nn.functional as F
 from torchvision.transforms import ToTensor, Compose, Resize, Normalize
 from torch.cuda.amp import autocast
 
@@ -63,7 +64,7 @@ class LaneDetector:
 
         img_input = Image.fromarray(img)
         transforms = Compose([
-            Resize(size=self.input_sizes[0]),
+            Resize(size=self.input_sizes),
             ToTensor(),
             Normalize(mean=self.mean, std=self.std)
         ])
@@ -73,8 +74,8 @@ class LaneDetector:
         with autocast(self.mixed_precision):
             output = self.model(img_input)
 
-            prob_map = torch.nn.functional.interpolate(output['out'], size=self.input_sizes[0], mode='bilinear',
-                                                       align_corners=True).softmax(dim=1)
+            prob_map = F.interpolate(output['out'], size=self.input_sizes, mode='bilinear',
+                                     align_corners=True).softmax(dim=1)
             existence_conf = output['lane'].sigmoid()
             existence = existence_conf > 0.5
 
@@ -91,8 +92,9 @@ class LaneDetector:
         existence = existence.cpu().numpy()
 
         # Get coordinates for lanes
+        ori_h, ori_w, _ = img.shape
         for j in range(existence.shape[0]):
-            lane_coordinates = prob_to_lines(prob_map[j], existence[j], resize_shape=self.input_sizes[1],
+            lane_coordinates = prob_to_lines(prob_map[j], existence[j], resize_shape=(ori_h, ori_w),
                                              gap=self.gap, ppl=self.ppl, thresh=self.threshold)
             all_lanes.extend(lane_coordinates)
 
