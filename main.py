@@ -86,7 +86,7 @@ def main(detect_type='image'):
         autonomous_detector = AutonomousDetector()
         autonomous_detector.detect_video(input_video)
     else:
-        raise NotImplemented
+        raise ValueError
 
 
 if __name__ == '__main__':

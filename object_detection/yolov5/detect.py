@@ -128,7 +128,7 @@ def main(detect_type='image'):
         yolo_detector = YoloDetector()
         yolo_detector.detect_video(input_video)
     else:
-        raise NotImplemented
+        raise ValueError
 
 
 if __name__ == '__main__':

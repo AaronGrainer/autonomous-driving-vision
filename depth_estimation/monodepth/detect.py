@@ -165,7 +165,7 @@ def main(detect_type='image'):
         mono_depth_estimator = MonoDepthEstimator()
         mono_depth_estimator.detect_video(input_video)
     else:
-        raise NotImplemented
+        raise ValueError
 
 
 if __name__ == '__main__':

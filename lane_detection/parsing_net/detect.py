@@ -228,7 +228,7 @@ def detect_video(detect_type):
     elif detect_type == 'video_cv':
         lane_detection = LaneDetectionCV()
     else:
-        raise NotImplemented
+        raise ValueError
 
     cap = cv2.VideoCapture(gc.test_video)
     while cap.isOpened():
@@ -264,7 +264,7 @@ def main(detect_type='cv'):
         plt.imshow(img)
         plt.show()
     else:
-        raise NotImplemented
+        raise ValueError
 
 
 if __name__ == '__main__':

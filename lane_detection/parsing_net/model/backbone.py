@@ -38,7 +38,7 @@ class Resnet(nn.Module):
         elif layers == '101wide':
             model = torchvision.models.wide_resnet101_2(pretrained=pretrained)
         else:
-            raise NotImplemented
+            raise ValueError
 
         self.conv1 = model.conv1
         self.bn1 = model.bn1

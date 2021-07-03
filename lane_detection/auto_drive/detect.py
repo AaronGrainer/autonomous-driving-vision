@@ -100,18 +100,25 @@ class LaneDetector:
 
         return all_lanes
 
-    def _visualizer(self, img, all_lanes):
+    def _visualizer(self, img, all_lanes, display_type='dot'):
         img = img.copy()
         for lanes in all_lanes:
             if lanes:
-                for (x, y) in lanes:
-                    cv2.circle(img, (int(x), int(y)), radius=3, color=(0, 0, 255), thickness=-1)
+                if display_type == 'dot':
+                    for (x, y) in lanes:
+                        cv2.circle(img, (int(x), int(y)), radius=3, color=(0, 0, 255), thickness=-1)
+                elif display_type == 'line':
+                    lanes = [lanes[0], lanes[-1]]
+                    pt1, pt2 = [(int(lanes[i][0]), int(lanes[i][1])) for i in range(len(lanes))]
+                    cv2.line(img, pt1, pt2, color=(121, 172, 252), thickness=2)
+                else:
+                    raise ValueError
 
         return img[:, :, ::-1]
 
     def detect(self, img):
         all_lanes = self._predict(img)
-        return self._visualizer(img, all_lanes)
+        return self._visualizer(img, all_lanes, display_type='line')
 
     def detect_img(self, img):
         img = self.detect(img)
@@ -154,7 +161,7 @@ def main(detect_type='image'):
         lane_detector = LaneDetector()
         lane_detector.detect_video(input_video)
     else:
-        raise NotImplemented
+        raise ValueError
 
 
 if __name__ == '__main__':
