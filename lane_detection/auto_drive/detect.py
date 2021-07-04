@@ -2,7 +2,6 @@ import fire
 import cv2
 import yaml
 from collections import OrderedDict
-import warnings
 from PIL import Image
 import matplotlib.pyplot as plt
 import time
