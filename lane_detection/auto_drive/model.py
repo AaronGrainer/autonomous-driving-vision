@@ -244,14 +244,13 @@ class ERFNet(nn.Module):
             return out
 
 
-def erfnet_resnet(pretrained_weights, num_classes=19, dropout_1=0.1, dropout_2=0.1,
+def erfnet_resnet(pretrained_weights, num_classes=19, num_lanes=0, dropout_1=0.1, dropout_2=0.1,
                   flattened_size=4500, scnn=False):
     """Constructs a ERFNet model with ResNet-style backbone.
 
     Args:
         pretrained_weights (str): If not None, load ImageNet pre-trained weights from this filename
     """
-    num_lanes = num_classes - 1
     net = ERFNet(num_classes=num_classes, encoder=None, num_lanes=num_lanes, dropout_1=dropout_1, dropout_2=dropout_2,
                  flattened_size=flattened_size, scnn=scnn)
     if pretrained_weights is not None:  # Load ImageNet pre-trained weights

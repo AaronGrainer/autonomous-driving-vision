@@ -43,7 +43,8 @@ class LaneDetector:
         else:
             self.device = torch.device("cpu")
 
-        self.model = erfnet_resnet(pretrained_weights, num_classes=num_classes)
+        num_lanes = num_classes - 1
+        self.model = erfnet_resnet(pretrained_weights, num_classes=num_classes, num_lanes=num_lanes)
         self.model.to(self.device)
         weights = torch.tensor(weights).to(self.device)
 
