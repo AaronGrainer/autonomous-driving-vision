@@ -10,7 +10,6 @@ from torch.cuda.amp import autocast
 
 # from road_detection.auto_drive.model import erfnet_resnet
 from lane_detection.auto_drive.model import erfnet_resnet
-from road_detection.auto_drive.utils import ConfusionMatrix
 
 from detectron2.utils.visualizer import Visualizer
 
@@ -59,35 +58,44 @@ class RoadDetector:
 
     @torch.no_grad()
     def _predict(self, img):
-        outlier = False
+        ori_h, ori_w, _ = img.shape
         self.model.eval()
 
         img_input = Image.fromarray(img)
         transforms = Compose([
             ToTensor(),
-            Resize(size=self.input_sizes[0]),
-            # LabelMap(None)
+            Resize(size=self.input_sizes[0])
         ])
         img_input = transforms(img_input).unsqueeze(0)
 
-        # conf_mat = ConfusionMatrix(self.num_classes)
         img_input = img_input.to(self.device)
-        ori_h, ori_w, _ = img.shape
-        print('ori_h, ori_w, _: ', ori_h, ori_w, _)
         with autocast(self.mixed_precision):
             output = self.model(img_input)['out']
             output = torch.nn.functional.interpolate(output, size=(ori_h, ori_w), mode='bilinear',
                                                      align_corners=True)
             output = output.argmax(1)
-        print('output: ', output, output.shape)
+
+        output = output.cpu().numpy()
+        output = output == 0
+        
+        return output
+
+    def _visualizer(self, img, seg_mask):
+        v = Visualizer(img, scale=1)
+
+        v.overlay_instances(masks=seg_mask, assigned_colors=['palegreen'])
+
+        out = v.get_output()
+        return out.get_image()[:, :, ::-1]
 
     def detect(self, img):
-        self._predict(img)
+        seg_mask = self._predict(img)
+        return self._visualizer(img, seg_mask)
 
     def detect_img(self, img):
         img = self.detect(img)
-        # cv2.imshow('preds', img)
-        # cv2.waitKey()
+        cv2.imshow('preds', img)
+        cv2.waitKey()
 
     def detect_video(self, input_video):
         pass
