@@ -120,14 +120,14 @@ class LaneDetector:
         all_lanes = self._predict(img)
         return self._visualizer(img, all_lanes, display_type='line')
 
+    def detect_img_lanes(self, img):
+        all_lanes = self._predict(img)
+        return all_lanes
+
     def detect_img(self, img):
         img = self.detect(img)
         cv2.imshow('preds', img)
         cv2.waitKey()
-
-    def detect_img_lanes(self, img):
-        all_lanes = self._predict(img)
-        return all_lanes
 
     def detect_video(self, input_video):
         cap = cv2.VideoCapture(input_video)

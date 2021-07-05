@@ -3,6 +3,8 @@ import cv2
 import yaml
 from collections import OrderedDict
 from PIL import Image
+import matplotlib.pyplot as plt
+import time
 
 import torch
 from torchvision.transforms import ToTensor, Compose, Resize
@@ -92,14 +94,35 @@ class RoadDetector:
         seg_mask = self._predict(img)
         return self._visualizer(img, seg_mask)
 
+    def detect_img_road(self, img):
+        seg_mask = self._predict(img)
+        return seg_mask
+
     def detect_img(self, img):
         img = self.detect(img)
         cv2.imshow('preds', img)
         cv2.waitKey()
 
     def detect_video(self, input_video):
-        pass
+        cap = cv2.VideoCapture(input_video)
+        ret, frame = cap.read()
 
+        ax1 = plt.subplot(111)
+        im1 = ax1.imshow(frame)
+
+        plt.ion()
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if ret is True:
+                start_time = time.time()
+                frame = self.detect(frame)
+                im1.set_data(frame)
+                plt.pause(0.001)
+                print("FPS: ", 1.0 / (time.time() - start_time))
+            else:
+                break
+        plt.ioff()
+        plt.show()
 
 
 def main(detect_type='image'):
