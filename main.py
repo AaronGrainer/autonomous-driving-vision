@@ -4,6 +4,7 @@ from object_detection.yolov5.detect import YoloDetector
 from object_detection.utils.trafic_light import detect_trafic_light_color
 from depth_estimation.monodepth.detect import MonoDepthEstimator
 from lane_detection.auto_drive.detect import LaneDetector
+from road_detection.auto_drive.detect import RoadDetector
 
 import cv2
 import matplotlib.pyplot as plt
@@ -16,8 +17,9 @@ class AutonomousDetector:
         self.yolo_detector = YoloDetector()
         self.mono_depth_estimator = MonoDepthEstimator()
         self.lane_detector = LaneDetector()
+        self.road_detector = RoadDetector()
 
-    def _visualize(self, img, preds, all_lanes):
+    def _visualize(self, img, preds, all_lanes, road_seg):
         v = Visualizer(img, scale=1)
 
         for _, pred in preds.iterrows():
@@ -45,6 +47,8 @@ class AutonomousDetector:
                 if lanes[0][0] >= 250 and lanes[0][0] <= 1050:
                     lane_pts = list(zip(*lanes))
                     v.draw_line(lane_pts[0], lane_pts[1], color='cornflowerblue')
+
+        v.overlay_instances(masks=road_seg, assigned_colors=['palegreen'])
         
         out = v.get_output()
         return out.get_image()[:, :, ::-1]
@@ -54,7 +58,8 @@ class AutonomousDetector:
         preds = self.mono_depth_estimator.detect_img_object(img, preds, class_only=['car'])
         preds = detect_trafic_light_color(img, preds)
         all_lanes = self.lane_detector.detect_img_lanes(img)
-        return self._visualize(img, preds, all_lanes)
+        road_seg = self.road_detector.detect_img_road(img)
+        return self._visualize(img, preds, all_lanes, road_seg)
 
     def detect_img(self, img):
         img_pred = self.detect(img)

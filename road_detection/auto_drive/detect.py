@@ -82,21 +82,21 @@ class RoadDetector:
         
         return output
 
-    def _visualizer(self, img, seg_mask):
+    def _visualizer(self, img, road_seg):
         v = Visualizer(img, scale=1)
 
-        v.overlay_instances(masks=seg_mask, assigned_colors=['palegreen'])
+        v.overlay_instances(masks=road_seg, assigned_colors=['palegreen'])
 
         out = v.get_output()
         return out.get_image()[:, :, ::-1]
 
     def detect(self, img):
-        seg_mask = self._predict(img)
-        return self._visualizer(img, seg_mask)
+        road_seg = self._predict(img)
+        return self._visualizer(img, road_seg)
 
     def detect_img_road(self, img):
-        seg_mask = self._predict(img)
-        return seg_mask
+        road_seg = self._predict(img)
+        return road_seg
 
     def detect_img(self, img):
         img = self.detect(img)
