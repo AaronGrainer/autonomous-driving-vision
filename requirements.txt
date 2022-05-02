@@ -11,3 +11,6 @@ typer==0.4.1
 matplotlib==3.5.1
 scikit-image==3.0.8
 filterpy==1.4.5
+pytorch-lightning==1.6.2
+thop==0.0.31.post2005241907
+albumentations==1.1.0

@@ -157,4 +157,5 @@ test_asset/
 
 .vscode
 yolov5s.pt
-data/
+data/bdd100k/
+data/test_asset/
