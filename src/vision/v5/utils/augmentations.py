@@ -272,3 +272,51 @@ def copy_paste(im, labels, segments, p=0.5):
         im[i] = result[i]  # cv2.imwrite('debug.jpg', im)  # debug
 
     return im, labels, segments
+
+
+def cutout(im, labels, p=0.5):
+    # Applies image cutout augmentation https://arxiv.org/abs/1708.04552
+    if random.random() < p:
+        h, w = im.shape[:2]
+        # image size fraction
+        scales = [0.5] * 1 + [0.25] * 2 + [0.125] * 4 + [0.0625] * 8 + [0.03125] * 16
+        for s in scales:
+            mask_h = random.randint(1, int(h * s))  # create random masks
+            mask_w = random.randint(1, int(w * s))
+
+            # box
+            xmin = max(0, random.randint(0, w) - mask_w // 2)
+            ymin = max(0, random.randint(0, h) - mask_h // 2)
+            xmax = min(w, xmin + mask_w)
+            ymax = min(h, ymin + mask_h)
+
+            # apply random color mask
+            im[ymin:ymax, xmin:xmax] = [random.randint(64, 191) for _ in range(3)]
+
+            # return unobscured labels
+            if len(labels) and s > 0.03:
+                box = np.array([xmin, ymin, xmax, ymax], dtype=np.float32)
+                ioa = bbox_ioa(box, labels[:, 1:5])  # intersection over area
+                labels = labels[ioa < 0.60]  # remove >60% obscured labels
+
+    return labels
+
+
+def mixup(im, labels, im2, labels2):
+    # Applies MixUp augmentation https://arxiv.org/pdf/1710.09412.pdf
+    r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0
+    im = (im * r + im2 * (1 - r)).astype(np.uint8)
+    labels = np.concatenate((labels, labels2), 0)
+    return im, labels
+
+
+# box1(4, n), box2(4, n)
+def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.1, eps=1e-16):
+    # Compute candidate boxes: box1 before augment, box2
+    # after augment, wh_thr (pixels), aspect_ratio_thr, area_ratio
+    w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
+    w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
+    # aspect ratio
+    ar = np.maximum(w2 / (h2 + eps), h2 / (w2 + eps))
+    # candidates
+    return (w2 > wh_thr) & (h2 > wh_thr) & (w2 * h2 / (w1 * h1 + eps) > area_thr) & (ar < ar_thr)
