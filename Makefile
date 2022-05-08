@@ -20,8 +20,8 @@ run-pre-commit:
 .PHONY: style
 style:
 	black .
-	# flake8
 	isort .
+	flake8
 
 
 # Cleaning
