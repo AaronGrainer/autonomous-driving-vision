@@ -159,3 +159,6 @@ test_asset/
 yolov5s.pt
 data/bdd100k/
 data/test_asset/
+detectron2/
+checkpoint/
+data/

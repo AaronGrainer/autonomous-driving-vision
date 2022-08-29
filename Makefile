@@ -1,9 +1,13 @@
 # Initialize project
-.PHONY: install
-install:
+.PHONY: init
+init:
 	python -m pip install -e ".[dev]" --no-cache-dir
-	pip install git+https://github.com/facebookresearch/detectron2.git#egg=detectron2
+	git clone https://github.com/facebookresearch/detectron2.git
+	python -m pip install -e detectron2
+	rmdir /s detectron2
 
+	wget https://github.com/Eromera/erfnet_pytorch/blob/master/trained_models/erfnet_encoder_pretrained.pth.tar -P ./checkpoint
+	wget https://github.com/Eromera/erfnet_pytorch/blob/master/trained_models/erfnet_pretrained.pth -P ./checkpoint
 
 # Pre commit hooks
 .PHONY: install-pre-commit
@@ -26,7 +30,7 @@ style:
 
 # Cleaning
 .PHONY: clean
-clean: style
+clean:
 	find . -type f -name "*.DS_Store" -ls -delete
 	find . | grep -E "(__pycache__|\.pyc|\.pyo)" | xargs rm -rf
 	find . | grep -E "pytest_cache" | xargs rm -rf

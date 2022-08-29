@@ -6,10 +6,11 @@ import matplotlib.pyplot as plt
 import torch
 import typer
 import yaml
-from detectron2.utils.visualizer import Visualizer
 from PIL import Image
 from torch.cuda.amp import autocast
 from torchvision.transforms import Compose, Resize, ToTensor
+
+from detectron2.utils.visualizer import Visualizer
 
 # from src.road_detection.auto_drive.model import erfnet_resnet
 from src.lane_detection.auto_drive.model import erfnet_resnet
@@ -22,7 +23,7 @@ class RoadDetector:
         self.dataset = "cityscapes"
         self.city_aug = 2
 
-        with open("road_detection/auto_drive/configs.yaml") as f:
+        with open("src/road_detection/auto_drive/configs.yaml") as f:
             configs = yaml.load(f, Loader=yaml.Loader)
 
         self.mean = configs["general"]["mean"]
