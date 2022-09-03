@@ -10,7 +10,7 @@ app = typer.Typer()
 @app.command()
 def road_detection(detect_type: str = "image"):
     if detect_type == "image":
-        img_path = "data/road.png"
+        img_path = "dataset/road.png"
         img = cv2.imread(img_path)[:, :, ::-1]
 
         road_detector = RoadDetector()

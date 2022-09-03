@@ -87,6 +87,59 @@ MONGO_CLIENT = (
 MLFLOW_HOST = os.getenv("MLFLOW_HOST")
 MLFLOW_TRACKING_URI = f"http://{MLFLOW_HOST}:5000/"
 
+# YOLOX
+YOLOX_CONFIG = {
+    # Model config
+    "num_classes": 80,
+    "depth": 1.00,
+    "width": 1.00,
+    "act": "silu",
+
+    # Dataloader config
+    "data_nun_workers": 4,
+    "input_size": (640, 640),
+    "multiscale_range": 5,
+    "data_dir": None,
+    "train_ann": "instances_train2017.json",
+    "val_ann": "instances_val2017.json",
+    "test_ann": "instances_test2017.json",
+
+    # Transform config
+    "mosaic_prob": 1.0,
+    "mixup_prob": 1.0,
+    "hsv_prob": 1.0,
+    "flip_prob": 0.5,
+    "translate": 0.1,
+    "mosaic_scale": (0.1, 2),
+    "enable_mixup": True,
+    "mixup_scale": (0.5, 1.5),
+    "shear": 2.0,
+
+    # Training config
+    "batch_size": 64,
+    "warmup_epochs": 5,
+    "max_epoch": 300,
+    "warmup_lr": 0,
+    "min_lr_ration": 0.05,
+    "basic_lr_per_img": 0.01 / 64.0,
+    "scheduler": "yoloxwarmcos",
+    "no_aug_epochs": 15,
+    "ema": True,
+    "weigth_decay": 5e-4,
+    "momentum": 0.9,
+    "print_internal": 10,
+    "eval_internal": 10,
+    "save_history_ckpt": True,
+    "exp_name": os.path.split(os.path.realpath(__file__))[1].split(".")[0],
+    "resume": False,
+    "checkpoint_dir": Path(BASE_DIR, "checkpoint", "yolox"),
+
+    # Testing config
+    "test_size": (640, 640),
+    "test_conf": 0.01,
+    "nmsthre": 0.65
+}
+
 # Logger
 logging_config = {
     "version": 1,

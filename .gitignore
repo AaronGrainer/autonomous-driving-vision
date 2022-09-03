@@ -161,4 +161,4 @@ data/bdd100k/
 data/test_asset/
 detectron2/
 checkpoint/
-data/
+dataset/
