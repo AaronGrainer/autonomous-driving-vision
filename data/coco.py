@@ -1,9 +1,11 @@
-from data.dataset_wrappers import Dataset
-from typing import Tuple, Callable
 from pathlib import Path
-from pycocotools.coco import COCO
-import numpy as np
+from typing import Callable, Tuple
+
 import cv2
+import numpy as np
+from pycocotools.coco import COCO
+
+from data.dataset_wrappers import Dataset
 
 
 def remove_useless_info(coco):
@@ -28,13 +30,14 @@ def remove_useless_info(coco):
 
 class COCODataset(Dataset):
     """COCO Dataset class"""
+
     def __init__(
         self,
         data_dir: str,
         json_file: str = "instances_train2017.json",
         name: str = "train2017",
         img_size: Tuple = (416, 416),
-        preproc: Callable = None
+        preproc: Callable = None,
     ):
         """COCO dataset initialization.
 
@@ -69,7 +72,7 @@ class COCODataset(Dataset):
 
     def __del__(self):
         del self.imgs
-        
+
     def _load_coco_annotations(self):
         return [self.load_anno_from_ids(_ids) for _ids in self.ids]
 
@@ -109,6 +112,9 @@ class COCODataset(Dataset):
 
         return (res, img_info, resized_info, file_name)
 
+    def load_anno(self, index):
+        return self.annotations[index][0]
+
     def load_image(self, index):
         file_name = self.annotations[index][3]
 
@@ -123,9 +129,7 @@ class COCODataset(Dataset):
         img = self.load_image(index)
         r = min(self.img_size[0] / img.shape[0], self.img_size[1] / img.shape[1])
         resize_img = cv2.resize(
-            img,
-            (int(img.shape[1] * r), int(img.shape[0] * r)),
-            interpolation=cv2.INTER_LINEAR
+            img, (int(img.shape[1] * r), int(img.shape[0] * r)), interpolation=cv2.INTER_LINEAR
         ).astype(np.uint8)
         return resize_img
 
@@ -140,4 +144,3 @@ class COCODataset(Dataset):
             img = self.load_resized_img(index)
 
         return img, res.copy(), img_info, np.array([id_])
-

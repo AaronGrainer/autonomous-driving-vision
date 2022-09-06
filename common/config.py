@@ -94,7 +94,6 @@ YOLOX_CONFIG = {
     "depth": 1.00,
     "width": 1.00,
     "act": "silu",
-
     # Dataloader config
     "data_nun_workers": 4,
     "input_size": (640, 640),
@@ -103,7 +102,6 @@ YOLOX_CONFIG = {
     "train_ann": "instances_train2017.json",
     "val_ann": "instances_val2017.json",
     "test_ann": "instances_test2017.json",
-
     # Transform config
     "mosaic_prob": 1.0,
     "mixup_prob": 1.0,
@@ -114,7 +112,6 @@ YOLOX_CONFIG = {
     "enable_mixup": True,
     "mixup_scale": (0.5, 1.5),
     "shear": 2.0,
-
     # Training config
     "batch_size": 64,
     "warmup_epochs": 5,
@@ -133,11 +130,10 @@ YOLOX_CONFIG = {
     "exp_name": os.path.split(os.path.realpath(__file__))[1].split(".")[0],
     "resume": False,
     "checkpoint_dir": Path(BASE_DIR, "checkpoint", "yolox"),
-
     # Testing config
     "test_size": (640, 640),
     "test_conf": 0.01,
-    "nmsthre": 0.65
+    "nmsthre": 0.65,
 }
 
 # Logger

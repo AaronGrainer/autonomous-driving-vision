@@ -7,8 +7,8 @@ import numpy as np
 import pandas as pd
 import torch
 import typer
-from detectron2.utils.visualizer import Visualizer
 
+from detectron2.utils.visualizer import Visualizer
 from src.object_detection.utils.sort import Sort
 
 app = typer.Typer()

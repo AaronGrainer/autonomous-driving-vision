@@ -3,8 +3,9 @@ import os
 import random
 
 import cv2
-import detectron2
 import numpy as np
+
+import detectron2
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog

@@ -25,7 +25,6 @@ run-pre-commit:
 style:
 	black .
 	isort .
-	flake8
 
 
 # Cleaning

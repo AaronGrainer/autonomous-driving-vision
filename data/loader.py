@@ -1,4 +1,5 @@
 from pytorch_lightning import LightningDataModule
+
 from common import config
 from data.coco import COCODataset
 from data.data_augment import TrainTransform
@@ -16,9 +17,6 @@ class COCODataModule(LightningDataModule):
             prepro=TrainTransform(
                 max_labels=50,
                 flip_prob=config.YOLOX_CONFIG["flip_prob"],
-                hsv_prob=config.YOLOX_CONFIG["hsv_prob"]
-            )
+                hsv_prob=config.YOLOX_CONFIG["hsv_prob"],
+            ),
         )
-
-        
-
