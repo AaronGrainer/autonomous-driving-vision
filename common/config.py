@@ -95,7 +95,7 @@ YOLOX_CONFIG = {
     "width": 1.00,
     "act": "silu",
     # Dataloader config
-    "data_nun_workers": 4,
+    "data_num_workers": 4,
     "input_size": (640, 640),
     "multiscale_range": 5,
     "data_dir": None,
@@ -107,6 +107,7 @@ YOLOX_CONFIG = {
     "mixup_prob": 1.0,
     "hsv_prob": 1.0,
     "flip_prob": 0.5,
+    "degrees": 10.0,
     "translate": 0.1,
     "mosaic_scale": (0.1, 2),
     "enable_mixup": True,
