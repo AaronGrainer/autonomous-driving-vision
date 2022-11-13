@@ -56,23 +56,24 @@ class YoloxModel(LightningModule):
 def train():
     # Initialize model
     yolox_model = YoloxModel()
+    print('yolox_model: ', yolox_model)
 
-    # Resume model if enabled and checkpoint exists
-    if config.YOLOX_CONFIG["resume"]:
-        checkpoint_file = Path(config.YOLOX_CONFIG["checkpoint_dir"], "checkpoint.ckpt")
-        if checkpoint_file.is_file():
-            yolox_model.load_from_checkpoint(checkpoint_file)
+    # # Resume model if enabled and checkpoint exists
+    # if config.YOLOX_CONFIG["resume"]:
+    #     checkpoint_file = Path(config.YOLOX_CONFIG["checkpoint_dir"], "checkpoint.ckpt")
+    #     if checkpoint_file.is_file():
+    #         yolox_model.load_from_checkpoint(checkpoint_file)
 
-    # Initialize dataloader
+    # # Initialize dataloader
 
-    # Initialize trainer
-    trainer = Trainer(
-        accelerator="auto",
-        devices=1 if torch.cuda.is_available() else None,
-        max_epochs=config.YOLOX_CONFIG["max_epoch"],
-        default_root_dir=config.YOLOX_CONFIG["checkpoint_dir"],
-    )
+    # # Initialize trainer
+    # trainer = Trainer(
+    #     accelerator="auto",
+    #     devices=1 if torch.cuda.is_available() else None,
+    #     max_epochs=config.YOLOX_CONFIG["max_epoch"],
+    #     default_root_dir=config.YOLOX_CONFIG["checkpoint_dir"],
+    # )
 
-    # Train the model
-    # TODO: Add dataloader params
-    trainer.fit(yolox_model)
+    # # Train the model
+    # # TODO: Add dataloader params
+    # trainer.fit(yolox_model)

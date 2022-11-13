@@ -1,8 +1,10 @@
 import cv2
 import typer
 
-from scripts.autonomous_detector import AutonomousDetector
-from src.road_detection.auto_drive.detect import RoadDetector
+# from scripts.autonomous_detector import AutonomousDetector
+# from src.road_detection.auto_drive.detect import RoadDetector
+
+from detector import trainer
 
 app = typer.Typer()
 
@@ -37,6 +39,11 @@ def full_predict(detect_type="image", frame_skip: int = None):
         autonomous_detector.detect_video(input_video, frame_skip)
     else:
         raise ValueError
+
+
+@app.command()
+def train_yolox():
+    trainer.train()
 
 
 if __name__ == "__main__":
