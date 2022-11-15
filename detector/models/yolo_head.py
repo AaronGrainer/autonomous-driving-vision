@@ -2,11 +2,12 @@ import math
 
 import torch.nn as nn
 import torch
+import torch.nn.functional as F
 
 from .network_blocks import BaseConv, DWConv
 from .losses import IOULoss
 
-from detector.utils import meshgrid
+from detector.utils import meshgrid, bboxes_iou
 
 
 class YOLOXHead(nn.Module):
@@ -309,6 +310,8 @@ class YOLOXHead(nn.Module):
                         labels,
                         imgs
                     )
+                except RuntimeError as e:
+                    # TODO
 
     @torch.no_grad()
     def get_assignments(
@@ -347,7 +350,65 @@ class YOLOXHead(nn.Module):
             num_gt
         )
 
-        # TODO
+        bboxes_preds_per_image = bboxes_preds_per_image[fg_mask]
+        cls_preds_ = cls_preds[batch_idx][fg_mask]
+        obj_preds_ = obj_preds[batch_idx][fg_mask]
+        num_in_boxes_anchor = bboxes_preds_per_image.shape[0]
+
+        if mode == "cpu":
+            gt_bboxes_per_image = gt_bboxes_per_image.cpu()
+            bboxes_preds_per_image = bboxes_preds_per_image.cpu()
+
+        pair_wise_ious = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image, False)
+
+        gt_cls_per_image = (
+            F.one_hot(gt_classes.to(torch.int64), self.num_classes)
+            .float()
+            .unsqueeze(1)
+            .repeat(1, num_in_boxes_anchor, 1)
+        )
+        pair_wise_ious_loss = -torch.log(pair_wise_ious + 1e-8)
+
+        if mode == "cpu":
+            cls_preds_, obj_preds_ = cls_preds_.cpu(), obj_preds_.cpu()
+
+        with torch.cuda.amp.autocast(enabled=False):
+            cls_preds_ = (
+                cls_preds_.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+                * obj_preds_.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
+            )
+            pair_wise_cls_loss = F.binary_cross_entropy(
+                cls_preds_.sqrt_(), gt_cls_per_image, reduction="none"
+            ).sum(-1)
+        del cls_preds_
+
+        cost = (
+            pair_wise_cls_loss
+            + 3.0 * pair_wise_ious_loss
+            + 100000.0 * (~is_in_boxes_and_center)
+        )
+
+        (
+            num_fg,
+            gt_matched_classes,
+            pred_ious_this_matching,
+            matched_gt_inds,
+        ) = self.dynamic_k_matching(cost, pair_wise_ious, gt_classes, num_gt, fg_mask)
+        del pair_wise_cls_loss, cost, pair_wise_ious, pair_wise_ious_loss
+
+        if mode == "cpu":
+            gt_matched_classes = gt_matched_classes.cuda()
+            fg_mask = fg_mask.cuda()
+            pred_ious_this_matching = pred_ious_this_matching.cuda()
+            matched_gt_inds = matched_gt_inds.cuda()
+
+        return (
+            gt_matched_classes,
+            fg_mask,
+            pred_ious_this_matching,
+            matched_gt_inds,
+            num_fg
+        )
 
     def get_in_boxes_info(
         self,
@@ -435,4 +496,39 @@ class YOLOXHead(nn.Module):
 
         return is_in_boxes_anchor, is_in_boxes_and_center
 
+    def dynamic_k_matching(self, cost, pair_wise_ious, gt_classes, num_gt, fg_mask):
+        # Dynamic K
+        matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
+
+        ious_in_boxes_matrix = pair_wise_ious
+        n_candidate_k = min(10, ious_in_boxes_matrix.size(1))
+        topk_ious, _ = torch.topk(ious_in_boxes_matrix, n_candidate_k, dim=1)
+        dynamic_ks = torch.clamp(topk_ious.sum(1).int(), min=1)
+        dynamic_ks = dynamic_ks.tolist()
+        for gt_idx in range(num_gt):
+            _, pos_idx = torch.topk(
+                cost[gt_idx], k=dynamic_ks[gt_idx], largest=False
+            )
+            matching_matrix[gt_idx][pos_idx] = 1
+
+        del topk_ious, dynamic_ks, pos_idx
+
+        anchor_matching_gt = matching_matrix.sum(0)
+        if (anchor_matching_gt > 1).sum() > 0:
+            _, cost_argmin = torch.min(cost[:, anchor_matching_gt > 1], dim=0)
+            matching_matrix[:, anchor_matching_gt > 1] *= 0
+            matching_matrix[cost_argmin, anchor_matching_gt > 1] = 1
+        fg_mask_inboxes = matching_matrix.sum(0) > 0
+        num_fg = fg_mask_inboxes.sum().item()
+
+        fg_mask[fg_mask.clone()] = fg_mask_inboxes
+
+        matched_gt_inds = matching_matrix[:, fg_mask_inboxes].argmax(0)
+        gt_matched_classes = gt_classes[matched_gt_inds]
+
+        pred_ious_this_matching = (matching_matrix * pair_wise_ious).sum(0)[
+            fg_mask_inboxes
+        ]
+
+        return num_fg, gt_matched_classes, pred_ious_this_matching, matched_gt_inds
 
