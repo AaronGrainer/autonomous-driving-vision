@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 from pytorch_lightning import LightningModule, Trainer
 
+from .models.yolox import YOLOX, YOLOPAFPN, YOLOXHead
+
 from common import config
 
 
@@ -16,6 +18,35 @@ class YoloxModel(LightningModule):
 
     def training_step(self):
         pass
+
+    def get_model(self):
+        def init_yolo(M):
+            for m in M.modules():
+                if isinstance(m, nn.BatchNorm2d):
+                    m.eps = 1e-3
+                    m.momentum = 0.03
+
+        if getattr(self, "model", None) is None:
+            in_channels = [256, 512, 1024]
+            backbone = YOLOPAFPN(
+                config.YOLOX_CONFIG["depth"],
+                config.YOLOX_CONFIG["width"],
+                in_channels=in_channels,
+                act=config.YOLOX_CONFIG["act"]
+            )
+            head = YOLOPAFPN(
+                config.YOLOX_CONFIG["num_classes"],
+                config.YOLOX_CONFIG["width"],
+                in_channels=in_channels,
+                act=config.YOLOX_CONFIG["act"]
+            )
+            self.model = YOLOX(backbone, head)
+
+        self.model.apply(init_yolo)
+        self.model.head.initialize_biases(1e-2)
+        self.model.train()
+
+        return self.model
 
     def configure_optimizers(self):
         warmup_lr = config.YOLOX_CONFIG["warmup_lr"]
